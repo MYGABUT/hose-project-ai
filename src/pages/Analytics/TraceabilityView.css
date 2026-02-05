@@ -1,0 +1,172 @@
+.trace-page {
+    padding: 24px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.search-bar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.trace-container {
+    flex: 1;
+    overflow: auto;
+    padding: 24px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px dashed #cbd5e1;
+    display: flex;
+    justify-content: center;
+}
+
+.tree-canvas {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.tree-node-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    padding-top: 20px;
+}
+
+/* Connector Lines */
+.tree-node-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    border-left: 2px solid #cbd5e1;
+    height: 20px;
+}
+
+.tree-children {
+    display: flex;
+    gap: 40px;
+    margin-top: 20px;
+    position: relative;
+}
+
+.tree-children::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    border-left: 2px solid #cbd5e1;
+    height: 20px;
+}
+
+/* Hide line for root */
+.tree-canvas>.tree-node-wrapper::before {
+    display: none;
+}
+
+.tree-node {
+    background: white;
+    width: 240px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    border-left: 4px solid #94a3b8;
+    overflow: hidden;
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+
+.tree-node:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+
+.node-header {
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.node-type {
+    font-weight: 800;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.node-status {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: white;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.node-body {
+    padding: 12px;
+}
+
+.node-label {
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.node-details {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+/* Colors */
+.border-green {
+    border-left-color: #10b981;
+}
+
+.bg-green {
+    background-color: #10b981;
+}
+
+.border-blue {
+    border-left-color: #3b82f6;
+}
+
+.bg-blue {
+    background-color: #3b82f6;
+}
+
+.border-orange {
+    border-left-color: #f59e0b;
+}
+
+.bg-orange {
+    background-color: #f59e0b;
+}
+
+.border-purple {
+    border-left-color: #8b5cf6;
+}
+
+.bg-purple {
+    background-color: #8b5cf6;
+}
+
+.border-gray {
+    border-left-color: #94a3b8;
+}
+
+.bg-gray {
+    background-color: #94a3b8;
+}
+
+.empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #94a3b8;
+    font-size: 1.1rem;
+}

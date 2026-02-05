@@ -1,0 +1,207 @@
+.margin-indicator {
+    padding: var(--spacing-4);
+    border-radius: var(--radius-lg);
+    border: 2px solid transparent;
+    transition: all var(--transition-fast);
+}
+
+/* Status Colors */
+.margin-indicator.status-danger {
+    background-color: var(--color-danger-light);
+    border-color: var(--color-danger);
+    animation: dangerPulse 1s ease-in-out infinite;
+}
+
+.margin-indicator.status-warning {
+    background-color: var(--color-warning-light);
+    border-color: var(--color-warning);
+}
+
+.margin-indicator.status-good {
+    background-color: #e8f5e9;
+    border-color: #81c784;
+}
+
+.margin-indicator.status-great {
+    background-color: #c8e6c9;
+    border-color: #66bb6a;
+}
+
+.margin-indicator.status-excellent {
+    background-color: var(--color-success-light);
+    border-color: var(--color-success);
+}
+
+@keyframes dangerPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.85;
+    }
+}
+
+/* Header */
+.margin-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-2);
+}
+
+.margin-label {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.margin-icon {
+    font-size: var(--font-size-lg);
+}
+
+/* Value */
+.margin-value {
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacing-1);
+}
+
+.margin-sign {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+}
+
+.margin-percent {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    font-family: var(--font-family-mono);
+}
+
+.margin-status {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    margin-left: var(--spacing-2);
+}
+
+.status-danger .margin-value {
+    color: var(--color-danger-dark);
+}
+
+.status-warning .margin-value {
+    color: var(--color-warning-dark);
+}
+
+.status-good .margin-value,
+.status-great .margin-value,
+.status-excellent .margin-value {
+    color: var(--color-success-dark);
+}
+
+/* Warning */
+.margin-warning {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    margin-top: var(--spacing-3);
+    padding: var(--spacing-2) var(--spacing-3);
+    background-color: var(--color-danger);
+    color: white;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+}
+
+/* Breakdown */
+.margin-breakdown {
+    margin-top: var(--spacing-4);
+    padding-top: var(--spacing-3);
+    border-top: 1px dashed var(--color-border);
+}
+
+.breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-1) 0;
+}
+
+.breakdown-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.breakdown-value {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    font-family: var(--font-family-mono);
+}
+
+.breakdown-value.cost {
+    color: var(--color-text-muted);
+}
+
+.breakdown-value.positive {
+    color: var(--color-success-dark);
+}
+
+.breakdown-value.negative {
+    color: var(--color-danger-dark);
+}
+
+.breakdown-divider {
+    height: 1px;
+    background-color: var(--color-border);
+    margin: var(--spacing-2) 0;
+}
+
+.breakdown-row.profit {
+    font-weight: var(--font-weight-bold);
+}
+
+/* Visual Bar */
+.margin-bar-wrapper {
+    margin-top: var(--spacing-4);
+}
+
+.margin-bar {
+    position: relative;
+    height: 8px;
+    background: linear-gradient(90deg,
+            var(--color-danger) 0%,
+            var(--color-warning) 15%,
+            #81c784 25%,
+            var(--color-success) 35%,
+            var(--color-success) 100%);
+    border-radius: var(--radius-full);
+    overflow: visible;
+}
+
+.margin-bar-fill {
+    position: absolute;
+    top: -2px;
+    left: 0;
+    height: 12px;
+    background-color: var(--color-primary);
+    border-radius: var(--radius-full);
+    border: 2px solid white;
+    box-shadow: var(--shadow-md);
+    transition: width var(--transition-slow);
+    min-width: 12px;
+}
+
+.margin-thresholds {
+    position: relative;
+    margin-top: var(--spacing-2);
+}
+
+.threshold {
+    position: absolute;
+    transform: translateX(-50%);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}

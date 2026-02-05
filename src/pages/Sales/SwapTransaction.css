@@ -1,0 +1,97 @@
+.swap-page {
+    padding: 24px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.swap-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.big-select {
+    font-size: 1.1rem;
+    padding: 12px;
+}
+
+.transaction-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.in-card {
+    border-top: 4px solid #ef4444 !important;
+}
+
+.out-card {
+    border-top: 4px solid #10b981 !important;
+}
+
+.text-red {
+    color: #ef4444;
+}
+
+.text-green {
+    color: #10b981;
+}
+
+.price-display {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.price-display .val {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.summary-card {
+    background-color: var(--bg-hover);
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 1.1rem;
+}
+
+.summary-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 12px 0;
+}
+
+.summary-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.5rem;
+    font-weight: 800;
+    padding: 12px 0;
+}
+
+.action-row {
+    margin-top: 24px;
+    text-align: right;
+}
+
+.btn-block {
+    width: 100%;
+}
+
+.result-card {
+    background-color: #f0fdf4;
+    /* Light green */
+    border: 1px solid #10b981;
+}
+
+@media (max-width: 768px) {
+    .transaction-grid {
+        grid-template-columns: 1fr;
+    }
+}

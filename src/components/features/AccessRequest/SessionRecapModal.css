@@ -1,0 +1,192 @@
+.session-recap {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+
+/* Header */
+.recap-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-3);
+    background-color: var(--color-background);
+    border-radius: var(--radius-lg);
+}
+
+.recap-user {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.recap-user .user-avatar {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-primary);
+    color: white;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    border-radius: var(--radius-full);
+}
+
+.recap-user .user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.recap-user .user-name {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-bold);
+}
+
+.recap-user .session-time {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.early-lock-badge {
+    padding: var(--spacing-2) var(--spacing-3);
+    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    border: 1px solid #4caf50;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    color: #2e7d32;
+}
+
+/* Stats */
+.recap-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-3);
+}
+
+.stat-item {
+    padding: var(--spacing-3);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.stat-label {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-1);
+}
+
+.stat-value {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+}
+
+.stat-value.status.expired {
+    color: #e65100;
+}
+
+.stat-value.status.early_lock {
+    color: #2e7d32;
+}
+
+/* Activities */
+.recap-activities {
+    padding: var(--spacing-4);
+    background-color: var(--color-background);
+    border-radius: var(--radius-lg);
+}
+
+.recap-activities h4 {
+    margin: 0 0 var(--spacing-3);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+}
+
+.no-activities {
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-4);
+    margin: 0;
+}
+
+.activity-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+}
+
+.activity-table th {
+    text-align: left;
+    padding: var(--spacing-2);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.activity-table td {
+    padding: var(--spacing-2);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.time-col {
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+.action-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+}
+
+.action-badge.create {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.action-badge.update {
+    background-color: #fff3e0;
+    color: #e65100;
+}
+
+.action-badge.delete {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.value-col {
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+}
+
+.value-col.old {
+    color: var(--color-danger);
+    text-decoration: line-through;
+}
+
+.value-col.new {
+    color: var(--color-success);
+    font-weight: var(--font-weight-semibold);
+}
+
+/* Footer */
+.recap-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: var(--spacing-4);
+    border-top: 1px solid var(--color-border);
+}
+
+.approver-info {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}

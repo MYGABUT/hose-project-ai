@@ -1,0 +1,205 @@
+.health-bar {
+    padding: var(--spacing-3);
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+}
+
+.health-bar.status-critical {
+    border-color: var(--color-danger);
+    animation: criticalGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes criticalGlow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+    }
+
+    50% {
+        box-shadow: 0 0 10px 2px rgba(244, 67, 54, 0.3);
+    }
+}
+
+.bar-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    margin-bottom: var(--spacing-2);
+}
+
+.bar-id {
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+.bar-position {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+}
+
+/* Visual Bar */
+.bar-visual {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.bar-track-full {
+    flex: 1;
+    display: flex;
+    gap: 2px;
+    height: 24px;
+    background-color: var(--color-background);
+    border-radius: var(--radius-md);
+    padding: 3px;
+}
+
+.bar-segment {
+    flex: 1;
+    background-color: var(--color-border);
+    border-radius: 2px;
+    transition: background-color var(--transition-fast);
+}
+
+.bar-segment.filled.status-good {
+    background: linear-gradient(180deg, #66bb6a, #4caf50);
+}
+
+.bar-segment.filled.status-warning {
+    background: linear-gradient(180deg, #ffb74d, #ff9800);
+}
+
+.bar-segment.filled.status-critical {
+    background: linear-gradient(180deg, #e57373, #f44336);
+    animation: segmentPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes segmentPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.bar-percent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 50px;
+}
+
+.percent-value {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    font-family: var(--font-family-mono);
+}
+
+.percent-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+.bar-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--spacing-2);
+    padding-top: var(--spacing-2);
+    border-top: 1px dashed var(--color-border);
+}
+
+.bar-remaining {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+}
+
+.bar-status-label {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-md);
+}
+
+.bar-status-label.status-good {
+    background-color: var(--color-success-light);
+    color: var(--color-success-dark);
+}
+
+.bar-status-label.status-warning {
+    background-color: var(--color-warning-light);
+    color: var(--color-warning-dark);
+}
+
+.bar-status-label.status-critical {
+    background-color: var(--color-danger-light);
+    color: var(--color-danger-dark);
+}
+
+/* Compact Version */
+.health-bar-compact {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+}
+
+.health-bar-compact .bar-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.health-bar-compact .bar-position {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+}
+
+.health-bar-compact .bar-status {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    font-family: var(--font-family-mono);
+}
+
+.health-bar-compact .bar-status.status-good {
+    color: var(--color-success);
+}
+
+.health-bar-compact .bar-status.status-warning {
+    color: var(--color-warning);
+}
+
+.health-bar-compact .bar-status.status-critical {
+    color: var(--color-danger);
+}
+
+.health-bar-compact .bar-track {
+    height: 6px;
+    background-color: var(--color-border);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.health-bar-compact .bar-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width var(--transition-slow);
+}
+
+.health-bar-compact .bar-fill.status-good {
+    background: linear-gradient(90deg, #4caf50, #81c784);
+}
+
+.health-bar-compact .bar-fill.status-warning {
+    background: linear-gradient(90deg, #ff9800, #ffb74d);
+}
+
+.health-bar-compact .bar-fill.status-critical {
+    background: linear-gradient(90deg, #f44336, #e57373);
+}

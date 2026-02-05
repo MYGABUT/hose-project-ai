@@ -1,0 +1,89 @@
+.card {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+}
+
+.card-padding-none .card-body {
+    padding: 0;
+}
+
+.card-padding-sm .card-body {
+    padding: var(--spacing-3);
+}
+
+.card-padding-md .card-body {
+    padding: var(--spacing-4);
+}
+
+.card-padding-lg .card-body {
+    padding: var(--spacing-6);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-4) var(--spacing-4) 0;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: var(--spacing-4);
+    padding-bottom: var(--spacing-4);
+}
+
+.card-header-text {
+    flex: 1;
+}
+
+.card-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+    margin: 0;
+}
+
+.card-subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin: var(--spacing-1) 0 0;
+}
+
+.card-header-action {
+    flex-shrink: 0;
+}
+
+/* Variants */
+.card-success {
+    border-color: var(--color-success);
+    border-width: 2px;
+}
+
+.card-danger {
+    border-color: var(--color-danger);
+    border-width: 2px;
+}
+
+.card-warning {
+    border-color: var(--color-warning);
+    border-width: 2px;
+}
+
+.card-info {
+    border-color: var(--color-info);
+    border-width: 2px;
+}
+
+.card-highlight {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+    color: var(--color-text-inverse);
+    border: none;
+}
+
+.card-highlight .card-title,
+.card-highlight .card-subtitle {
+    color: var(--color-text-inverse);
+}
+
+.card-highlight .card-subtitle {
+    opacity: 0.8;
+}

@@ -1,0 +1,87 @@
+/* Outbound / Delivery Orders Styles */
+
+.outbound-page {
+    padding: var(--spacing-4);
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.header-actions {
+    display: flex;
+    gap: var(--spacing-3);
+}
+
+/* Ready Panel */
+.ready-panel {
+    margin-bottom: var(--spacing-4);
+    border: 2px solid var(--color-success);
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+}
+
+.ready-panel h3 {
+    margin: 0 0 var(--spacing-3);
+    color: var(--color-success-dark);
+}
+
+.ready-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-3);
+}
+
+.ready-item {
+    background: white;
+    padding: var(--spacing-3);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+}
+
+.ready-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-2);
+}
+
+.ready-so {
+    font-family: var(--font-family-mono);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary);
+    font-size: var(--font-size-sm);
+}
+
+.ready-customer {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+.ready-desc {
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-2);
+}
+
+.ready-qty {
+    font-size: var(--font-size-sm);
+    color: var(--color-success-dark);
+}
+
+.ready-qty strong {
+    font-size: var(--font-size-lg);
+}
+
+/* DO Number */
+.do-number {
+    font-family: var(--font-family-mono);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .header-actions {
+        flex-direction: column;
+    }
+
+    .ready-list {
+        grid-template-columns: 1fr;
+    }
+}

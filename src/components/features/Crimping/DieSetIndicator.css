@@ -1,0 +1,68 @@
+.die-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    padding: var(--spacing-4);
+    background-color: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.die-indicator-lg {
+    padding: var(--spacing-6);
+    gap: var(--spacing-6);
+}
+
+.die-color-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    border: 3px solid var(--color-border);
+}
+
+.die-indicator-sm .die-color-block {
+    width: 32px;
+    height: 32px;
+}
+
+.die-indicator-md .die-color-block {
+    width: 48px;
+    height: 48px;
+}
+
+.die-indicator-lg .die-color-block {
+    width: 64px;
+    height: 64px;
+}
+
+.die-inner-text {
+    font-size: var(--font-size-xs);
+}
+
+.die-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+}
+
+.die-code {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+    font-family: var(--font-family-mono);
+}
+
+.die-indicator-lg .die-code {
+    font-size: var(--font-size-2xl);
+}
+
+.die-color-name {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.die-indicator-lg .die-color-name {
+    font-size: var(--font-size-base);
+}

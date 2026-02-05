@@ -1,0 +1,316 @@
+.barcode-generator-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal);
+    animation: fadeIn var(--transition-fast);
+    padding: var(--spacing-4);
+}
+
+.barcode-generator-modal {
+    width: 100%;
+    max-width: 360px;
+    max-height: 90vh;
+    background-color: var(--color-surface);
+    border-radius: var(--radius-2xl);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.generator-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-3) var(--spacing-4);
+    background-color: var(--color-success);
+    color: var(--color-text-inverse);
+    flex-shrink: 0;
+}
+
+.generator-header h2 {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-bold);
+    margin: 0;
+}
+
+.generator-close {
+    padding: var(--spacing-2);
+    color: var(--color-text-inverse);
+    opacity: 0.8;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    min-width: 32px;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.generator-close:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.generator-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-4);
+    gap: var(--spacing-3);
+    overflow-y: auto;
+    flex: 1;
+}
+
+.success-animation {
+    color: var(--color-success);
+    animation: bounceIn 0.5s ease-out;
+}
+
+.success-animation svg {
+    width: 48px;
+    height: 48px;
+}
+
+@keyframes bounceIn {
+    0% {
+        transform: scale(0);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.qr-display {
+    padding: var(--spacing-3);
+    background-color: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.qr-display svg {
+    width: 150px !important;
+    height: 150px !important;
+}
+
+.item-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-1);
+    text-align: center;
+}
+
+.item-id {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
+    font-family: var(--font-family-mono);
+    letter-spacing: 0.02em;
+    word-break: break-all;
+}
+
+.item-spec {
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    font-weight: var(--font-weight-medium);
+}
+
+.item-location,
+.item-qty {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+.item-location {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.print-success-message {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3) var(--spacing-4);
+    background-color: var(--color-success-light);
+    color: var(--color-success-dark);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    0% {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.generator-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.generator-footer {
+    padding: var(--spacing-3) var(--spacing-4);
+    background-color: var(--color-background);
+    text-align: center;
+    border-top: 1px solid var(--color-border);
+}
+
+.generator-footer p {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+/* Printer Selection */
+.printer-selection {
+    width: 100%;
+    padding: var(--spacing-4);
+    background: var(--color-background);
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--color-border);
+}
+
+.printer-selection h4 {
+    margin: 0 0 var(--spacing-3);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-bold);
+}
+
+.printer-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+}
+
+.printer-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3);
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+}
+
+.printer-item:hover:not(.offline) {
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
+}
+
+.printer-item.selected {
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
+}
+
+.printer-item.offline {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.printer-icon {
+    font-size: 1.5rem;
+}
+
+.printer-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.printer-name {
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-sm);
+}
+
+.printer-status {
+    font-size: var(--font-size-xs);
+}
+
+.printer-status.online {
+    color: var(--color-success);
+}
+
+.printer-status.offline {
+    color: var(--color-danger);
+}
+
+.selected-check {
+    color: var(--color-primary);
+    font-weight: var(--font-weight-bold);
+    font-size: 1.25rem;
+}
+
+/* Current Printer */
+.current-printer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: var(--spacing-3);
+    background: var(--color-info-light);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+}
+
+.change-printer-btn {
+    padding: var(--spacing-1) var(--spacing-3);
+    background: var(--color-info);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.change-printer-btn:hover {
+    background: var(--color-info-dark);
+}
+
+/* Success Messages */
+.success-message {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    animation: slideIn 0.3s ease-out;
+    width: 100%;
+    justify-content: center;
+}
+
+.success-message.print {
+    background-color: var(--color-success-light);
+    color: var(--color-success-dark);
+}
+
+.success-message.save {
+    background-color: var(--color-info-light);
+    color: var(--color-info-dark);
+}

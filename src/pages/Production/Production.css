@@ -1,0 +1,1019 @@
+.production-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+}
+
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.page-title {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+    margin: 0;
+}
+
+.page-subtitle {
+    font-size: var(--font-size-base);
+    color: var(--color-text-muted);
+    margin-top: var(--spacing-1);
+}
+
+.job-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: var(--spacing-6);
+}
+
+.job-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.job-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-4);
+}
+
+.job-card-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.job-order-id {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
+    font-family: var(--font-family-mono);
+}
+
+.priority-badge {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
+    letter-spacing: 0.05em;
+}
+
+.priority-high {
+    background-color: var(--color-danger-light);
+    color: var(--color-danger-dark);
+}
+
+.priority-medium {
+    background-color: var(--color-warning-light);
+    color: var(--color-warning-dark);
+}
+
+.priority-low {
+    background-color: var(--color-info-light);
+    color: var(--color-info-dark);
+}
+
+.job-card-body {
+    flex: 1;
+}
+
+.client-name {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+    margin: 0 0 var(--spacing-2);
+}
+
+.job-description {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin: 0 0 var(--spacing-4);
+}
+
+.progress-section {
+    margin-bottom: var(--spacing-4);
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-2);
+}
+
+.progress-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.progress-value {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+}
+
+.progress-bar {
+    height: 10px;
+    background-color: var(--color-border);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+    border-radius: var(--radius-full);
+    transition: width var(--transition-slow);
+}
+
+.job-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+}
+
+.due-date {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.job-card-footer {
+    margin-top: var(--spacing-4);
+    padding-top: var(--spacing-4);
+    border-top: 1px solid var(--color-border);
+}
+
+.job-card-footer a {
+    text-decoration: none;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-4);
+    }
+
+    .job-cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Filter Tabs */
+.filter-tabs {
+    display: flex;
+    gap: var(--spacing-2);
+    margin-bottom: var(--spacing-4);
+    flex-wrap: wrap;
+}
+
+.filter-tab {
+    padding: var(--spacing-2) var(--spacing-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-tab:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.filter-tab.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+/* Data Table */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th {
+    text-align: left;
+    padding: var(--spacing-3) var(--spacing-4);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    background: var(--color-background);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.data-table td {
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--color-border);
+    font-size: var(--font-size-sm);
+}
+
+.data-table tr:hover {
+    background: var(--color-background);
+}
+
+.so-number,
+.jo-number {
+    font-family: var(--font-family-mono);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary);
+}
+
+.actions-cell {
+    display: flex;
+    gap: var(--spacing-2);
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-block;
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+}
+
+.status-badge.gray {
+    background: var(--color-gray-100);
+    color: var(--color-gray-600);
+}
+
+.status-badge.blue {
+    background: var(--color-info-light);
+    color: var(--color-info-dark);
+}
+
+.status-badge.orange {
+    background: var(--color-warning-light);
+    color: var(--color-warning-dark);
+}
+
+.status-badge.purple {
+    background: #EDE9FE;
+    color: #7C3AED;
+}
+
+.status-badge.teal {
+    background: #CCFBF1;
+    color: #0D9488;
+}
+
+.status-badge.green {
+    background: var(--color-success-light);
+    color: var(--color-success-dark);
+}
+
+.status-badge.red {
+    background: var(--color-danger-light);
+    color: var(--color-danger-dark);
+}
+
+/* Small Progress Bar */
+.progress-bar-container {
+    position: relative;
+    width: 100px;
+    height: 20px;
+    background: var(--color-gray-100);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.progress-bar-container .progress-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
+}
+
+.progress-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    line-height: 20px;
+}
+
+/* Empty & Loading States */
+.empty-state,
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-10);
+    text-align: center;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-3);
+}
+
+.empty-state h3 {
+    font-size: var(--font-size-lg);
+    margin: 0 0 var(--spacing-2);
+}
+
+.empty-state p {
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Header Actions */
+.header-actions {
+    display: flex;
+    gap: var(--spacing-2);
+}
+
+/* Priority Badge Colors */
+.priority-badge {
+    display: inline-block;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+}
+
+.priority-badge.red {
+    background: #fecaca;
+    color: #991b1b;
+}
+
+.priority-badge.orange {
+    background: #fed7aa;
+    color: #c2410c;
+}
+
+.priority-badge.yellow {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.priority-badge.green {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.priority-badge.gray {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+/* Status Badge Yellow */
+.status-badge.yellow {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+/* Stock Warning Banner */
+.stock-warning-banner {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #f59e0b;
+    border-radius: var(--radius-md);
+    padding: var(--spacing-3);
+    margin-bottom: var(--spacing-4);
+    color: #92400e;
+}
+
+.stock-warning-banner ul {
+    margin: var(--spacing-2) 0 0;
+    padding-left: var(--spacing-5);
+}
+
+/* Item Row with Warning */
+.item-row.stock-warning {
+    border-left: 3px solid #f59e0b;
+    background: #fffbeb;
+}
+
+.warning-badge {
+    margin-left: var(--spacing-2);
+    font-size: var(--font-size-xs);
+    color: #f59e0b;
+}
+
+/* JO Info Grid */
+.jo-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+    padding: var(--spacing-4);
+    background: var(--color-background);
+    border-radius: var(--radius-md);
+}
+
+.jo-info-grid .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+}
+
+.jo-info-grid .info-item label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+}
+
+/* Materials List */
+.materials-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+    margin-top: var(--spacing-3);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.material-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-2) var(--spacing-3);
+    background: var(--color-background);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+}
+
+.material-barcode {
+    font-family: var(--font-family-mono);
+    font-weight: var(--font-weight-semibold);
+}
+
+.material-qty {
+    color: var(--color-primary);
+    font-weight: var(--font-weight-medium);
+}
+
+.material-status {
+    margin-left: auto;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+}
+
+.material-status.pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.material-status.picked {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.material-status.consumed {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.material-count {
+    color: var(--color-success);
+    font-weight: var(--font-weight-medium);
+}
+
+/* JO Notes */
+.jo-notes {
+    margin-top: var(--spacing-4);
+    padding: var(--spacing-3);
+    background: var(--color-gray-50);
+    border-radius: var(--radius-md);
+}
+
+.jo-notes h4 {
+    margin: 0 0 var(--spacing-2);
+}
+
+.jo-notes p {
+    margin: 0;
+    color: var(--color-text-secondary);
+}
+
+/* Compact Table */
+.data-table.compact th,
+.data-table.compact td {
+    padding: var(--spacing-2) var(--spacing-3);
+}
+
+/* Toast Message */
+.toast-message {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: var(--spacing-3) var(--spacing-5);
+    border-radius: var(--radius-lg);
+    font-weight: var(--font-weight-semibold);
+    z-index: 1001;
+    animation: slideDown 0.3s ease;
+}
+
+.toast-message.success {
+    background: var(--color-success);
+    color: white;
+}
+
+.toast-message.error {
+    background: var(--color-danger);
+    color: white;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateX(-50%) translateY(-20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Items Total */
+.items-total {
+    padding: var(--spacing-3);
+    background: var(--color-background);
+    border-radius: var(--radius-md);
+    text-align: right;
+    margin-top: var(--spacing-3);
+}
+
+/* Item Price */
+.item-price {
+    display: block;
+    font-size: var(--font-size-sm);
+    color: var(--color-success);
+    font-weight: var(--font-weight-semibold);
+}
+
+/* ============ Payment Tracking Styles ============ */
+
+.payment-badge {
+    display: inline-block;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+}
+
+.payment-badge.red {
+    background: #fecaca;
+    color: #991b1b;
+}
+
+.payment-badge.orange {
+    background: #fed7aa;
+    color: #c2410c;
+}
+
+.payment-badge.green {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.payment-cell {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.payment-btn {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-1);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.payment-btn:hover {
+    background: var(--color-primary-light);
+    border-color: var(--color-primary);
+}
+
+.amount-cell {
+    font-family: var(--font-family-mono);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-success);
+}
+
+/* Payment Modal Styles */
+.payment-info {
+    background: var(--color-gray-50);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--spacing-2) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-row .label {
+    color: var(--color-text-muted);
+}
+
+.info-row .value {
+    font-weight: var(--font-weight-semibold);
+}
+
+.info-row .amount {
+    color: var(--color-primary);
+    font-family: var(--font-family-mono);
+}
+
+.info-row.highlight {
+    background: var(--color-warning-light);
+    margin: var(--spacing-2) calc(-1 * var(--spacing-4));
+    padding: var(--spacing-3) var(--spacing-4);
+    border-radius: var(--radius-md);
+    border: none;
+}
+
+.info-row .amount-due {
+    color: var(--color-danger);
+    font-size: var(--font-size-lg);
+}
+
+.quick-amounts {
+    display: flex;
+    gap: var(--spacing-2);
+    margin-top: var(--spacing-3);
+}
+
+.quick-amounts button {
+    flex: 1;
+    padding: var(--spacing-2) var(--spacing-3);
+    background: var(--color-gray-100);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    transition: all 0.2s;
+}
+
+.quick-amounts button:hover {
+    background: var(--color-primary-light);
+    border-color: var(--color-primary);
+}
+
+/* HPP Display Styles */
+.hpp-card {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #f59e0b;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+    margin-top: var(--spacing-4);
+}
+
+.hpp-card h4 {
+    margin: 0 0 var(--spacing-3);
+    color: #92400e;
+}
+
+.hpp-breakdown {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-3);
+}
+
+.hpp-item {
+    text-align: center;
+    padding: var(--spacing-2);
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius-md);
+}
+
+.hpp-item .hpp-label {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: #92400e;
+    margin-bottom: var(--spacing-1);
+}
+
+.hpp-item .hpp-value {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: #b45309;
+    font-family: var(--font-family-mono);
+}
+
+.hpp-total {
+    margin-top: var(--spacing-3);
+    padding-top: var(--spacing-3);
+    border-top: 2px dashed #f59e0b;
+    text-align: right;
+}
+
+.hpp-total .hpp-label {
+    font-size: var(--font-size-sm);
+    color: #92400e;
+}
+
+.hpp-total .hpp-value {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: #92400e;
+}
+
+/* ============ Credit Limit Info Card ============ */
+
+.credit-info-card {
+    margin-top: var(--spacing-3);
+    padding: var(--spacing-3);
+    border-radius: var(--radius-md);
+    border: 1px solid;
+}
+
+.credit-info-card.success {
+    background: #dcfce7;
+    border-color: #16a34a;
+}
+
+.credit-info-card.warning {
+    background: #fef3c7;
+    border-color: #f59e0b;
+}
+
+.credit-info-card.danger {
+    background: #fee2e2;
+    border-color: #dc2626;
+}
+
+.credit-header {
+    font-weight: var(--font-weight-bold);
+    margin-bottom: var(--spacing-2);
+    color: var(--color-text);
+}
+
+.credit-details {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-2);
+}
+
+.credit-item {
+    text-align: center;
+    padding: var(--spacing-2);
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: var(--radius-sm);
+}
+
+.credit-item span {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-1);
+}
+
+.credit-item strong {
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family-mono);
+}
+
+.credit-item .outstanding {
+    color: #dc2626;
+}
+
+.credit-item .available {
+    color: #16a34a;
+}
+
+.credit-warning-text {
+    margin-top: var(--spacing-2);
+    padding: var(--spacing-2);
+    background: rgba(220, 38, 38, 0.1);
+    border-radius: var(--radius-sm);
+    color: #dc2626;
+    font-weight: var(--font-weight-semibold);
+    text-align: center;
+}
+
+/* JO Profitability Styles */
+.profitability-page {
+    padding: 16px;
+}
+
+.profit-summary {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.profit-card {
+    padding: 24px;
+    text-align: center;
+}
+
+.profit-card.positive {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border: 2px solid #10b981;
+}
+
+.profit-card.negative {
+    background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+    border: 2px solid #ef4444;
+}
+
+.profit-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.profit-icon {
+    font-size: 28px;
+}
+
+.profit-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.profit-value {
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.profit-meta {
+    font-size: 14px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+.metric-card {
+    padding: 16px;
+}
+
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.metric-row:last-child {
+    border-bottom: none;
+}
+
+.metric-row.highlight {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.metric-label {
+    color: #6b7280;
+}
+
+.metric-label.success {
+    color: #10b981;
+}
+
+.metric-label.danger {
+    color: #ef4444;
+}
+
+.metric-value {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.period-select {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+}
+
+.profit-lists {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.profit-section .section-title {
+    margin-bottom: 16px;
+    font-size: 16px;
+}
+
+.job-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.job-card {
+    border-left: 4px solid;
+}
+
+.job-card.profitable {
+    border-color: #10b981;
+}
+
+.job-card.unprofitable {
+    border-color: #ef4444;
+}
+
+.job-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.job-number {
+    font-family: monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: #3b82f6;
+}
+
+.job-margin {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 12px;
+    color: white;
+}
+
+.job-customer {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 10px;
+}
+
+.job-stats {
+    display: flex;
+    gap: 16px;
+}
+
+.stat {
+    flex: 1;
+}
+
+.stat-label {
+    display: block;
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.stat-value {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.stat.profit .stat-value {
+    color: #10b981;
+}
+
+.stat.loss .stat-value {
+    color: #ef4444;
+}
+
+.no-data {
+    text-align: center;
+    color: #9ca3af;
+    padding: 20px;
+}

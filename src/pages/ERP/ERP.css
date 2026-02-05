@@ -1,0 +1,134 @@
+/* ERP Dashboard Styles */
+.erp-dashboard {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.erp-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.erp-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--color-text, #1f2937);
+    margin: 0;
+}
+
+.erp-subtitle {
+    font-size: 16px;
+    color: var(--color-text-muted, #6b7280);
+    margin-top: 8px;
+}
+
+/* Modules Grid */
+.erp-modules {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+}
+
+.erp-module {
+    border-top: 4px solid;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.erp-module:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.module-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.module-icon {
+    font-size: 32px;
+}
+
+.module-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text, #1f2937);
+    margin: 0;
+}
+
+/* Module Items */
+.module-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.module-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.module-item:hover {
+    background: var(--color-surface, #f9fafb);
+}
+
+.item-icon {
+    font-size: 24px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-background, #f3f4f6);
+    border-radius: 8px;
+}
+
+.item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.item-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text, #1f2937);
+}
+
+.item-desc {
+    font-size: 12px;
+    color: var(--color-text-muted, #9ca3af);
+}
+
+.item-arrow {
+    font-size: 18px;
+    color: var(--color-text-muted, #9ca3af);
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.module-item:hover .item-arrow {
+    opacity: 1;
+    transform: translateX(4px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .erp-dashboard {
+        padding: 16px;
+    }
+
+    .erp-modules {
+        grid-template-columns: 1fr;
+    }
+}

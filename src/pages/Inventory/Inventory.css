@@ -1,0 +1,546 @@
+.inventory-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+}
+
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.page-title {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+    margin: 0;
+}
+
+.page-subtitle {
+    font-size: var(--font-size-base);
+    color: var(--color-text-muted);
+    margin-top: var(--spacing-1);
+}
+
+/* Tab Navigation */
+.tab-navigation {
+    display: flex;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2);
+    background-color: var(--color-surface);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border);
+}
+
+.tab-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3) var(--spacing-5);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+    background-color: var(--color-background);
+    color: var(--color-text);
+}
+
+.tab-btn.active {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+}
+
+/* Rolls Grid */
+.rolls-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-4);
+}
+
+.roll-card {
+    transition: all var(--transition-fast);
+}
+
+.roll-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.roll-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-3);
+}
+
+.roll-id {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
+    font-family: var(--font-family-mono);
+}
+
+.roll-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.roll-name {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+    margin: 0;
+}
+
+.roll-location {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.roll-meter {
+    margin-top: var(--spacing-2);
+}
+
+.meter-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-2);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.meter-value {
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+}
+
+.meter-bar {
+    height: 10px;
+    background-color: var(--color-border);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.meter-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width var(--transition-slow);
+}
+
+/* Remnants Section */
+.remnants-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+}
+
+.remnants-summary {
+    display: flex;
+    gap: var(--spacing-4);
+}
+
+.summary-item {
+    flex: 1;
+    padding: var(--spacing-4);
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    text-align: center;
+}
+
+.summary-item.warning {
+    background-color: var(--color-warning-light);
+    border-color: var(--color-warning);
+}
+
+.summary-item .summary-value {
+    display: block;
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+}
+
+.summary-item .summary-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+/* Remnants List */
+.remnants-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.remnant-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    padding: var(--spacing-4);
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+}
+
+.remnant-item.unusable {
+    background-color: var(--color-background);
+    opacity: 0.7;
+}
+
+.remnant-info {
+    flex: 1;
+}
+
+.remnant-id {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
+    font-family: var(--font-family-mono);
+}
+
+.remnant-spec {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+    margin-top: var(--spacing-1);
+}
+
+.remnant-meta {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin-top: var(--spacing-1);
+}
+
+.remnant-length {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--spacing-1);
+}
+
+.length-value {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+}
+
+.unusable-tag {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-danger);
+    background-color: var(--color-danger-light);
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
+}
+
+.remnant-actions {
+    flex-shrink: 0;
+}
+
+/* Remnant Prompt Modal */
+.remnant-prompt {
+    text-align: center;
+    padding: var(--spacing-4);
+}
+
+.remnant-prompt-icon {
+    color: var(--color-warning);
+    margin-bottom: var(--spacing-4);
+}
+
+.remnant-prompt-text {
+    font-size: var(--font-size-lg);
+    color: var(--color-text);
+    margin-bottom: var(--spacing-2);
+}
+
+.remnant-prompt-subtext {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-4);
+    }
+
+    .tab-navigation {
+        flex-direction: column;
+    }
+
+    .rolls-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .remnants-summary {
+        flex-direction: column;
+    }
+}
+
+/* ============ Excel-Style Combo Input ============ */
+.combo-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.combo-input {
+    width: 100%;
+    padding: 10px 32px 10px 12px;
+    border: 1px solid var(--color-border, #d1d5db);
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.combo-input:focus {
+    outline: none;
+    border-color: var(--color-primary, #3b82f6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.combo-arrow {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: #9ca3af;
+    pointer-events: none;
+}
+
+.combo-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid var(--color-border, #d1d5db);
+    border-radius: 8px;
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
+        0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.combo-option {
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.15s;
+}
+
+.combo-option:last-child {
+    border-bottom: none;
+}
+
+.combo-option:hover {
+    background: #f0f9ff;
+}
+
+.combo-option.selected {
+    background: #dbeafe;
+    font-weight: 600;
+    color: #1d4ed8;
+}
+
+.combo-empty {
+    padding: 16px;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 14px;
+}
+
+.combo-add-new {
+    padding: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+    color: #15803d;
+    border-top: 1px solid #bbf7d0;
+    transition: background 0.15s;
+}
+
+.combo-add-new:hover {
+    background: linear-gradient(180deg, #dcfce7 0%, #bbf7d0 100%);
+}
+
+.combo-add-new strong {
+    color: #166534;
+}
+
+/* Form hint text */
+.form-group label .hint {
+    font-size: 11px;
+    font-weight: normal;
+    color: #9ca3af;
+    margin-left: 6px;
+}
+
+/* Form styles for Add Roll Modal */
+.add-roll-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.add-roll-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.add-roll-form .form-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.add-roll-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.add-roll-form input,
+.add-roll-form select {
+    padding: 10px 12px;
+    border: 1px solid var(--color-border, #d1d5db);
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.add-roll-form input:focus,
+.add-roll-form select:focus {
+    outline: none;
+    border-color: var(--color-primary, #3b82f6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* Header actions */
+.header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.zone-filter {
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+/* Toast message */
+.toast-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 9999;
+    animation: slideIn 0.3s ease;
+}
+
+.toast-message.success {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.toast-message.error {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Loading and empty states */
+.loading-state {
+    padding: 60px;
+    text-align: center;
+    color: #9ca3af;
+}
+
+.empty-card {
+    text-align: center;
+    padding: 40px;
+}
+
+.empty-text {
+    text-align: center;
+    color: #9ca3af;
+    padding: 20px;
+}
+
+/* ============ Unit Toggle ============ */
+.unit-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px;
+    background: var(--color-surface, #f9fafb);
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: 8px;
+}
+
+.toggle-label {
+    font-size: 12px;
+    color: var(--color-text-muted, #6b7280);
+    padding: 0 8px;
+}
+
+.toggle-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 6px;
+    color: var(--color-text-secondary, #4b5563);
+    background: transparent;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.toggle-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.toggle-btn.active {
+    background: var(--color-primary, #3b82f6);
+    color: white;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+/* Meter value with dual unit */
+.meter-value {
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+    font-size: 12px;
+}

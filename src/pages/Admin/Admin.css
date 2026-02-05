@@ -1,0 +1,315 @@
+/* Admin Pages CSS */
+
+.admin-page {
+    padding: 24px;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+}
+
+.page-subtitle {
+    color: var(--color-text-secondary, #6b7280);
+    margin: 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* Summary Grid */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.summary-card {
+    text-align: center;
+    padding: 20px;
+}
+
+.summary-card.success {
+    border-left: 4px solid #10b981;
+}
+
+.summary-card.warning {
+    border-left: 4px solid #f59e0b;
+}
+
+.summary-card.danger {
+    border-left: 4px solid #ef4444;
+}
+
+.summary-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.summary-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--color-text, #1f2937);
+}
+
+.summary-label {
+    font-size: 13px;
+    color: var(--color-text-secondary, #6b7280);
+}
+
+/* Filter Card */
+.filter-card {
+    margin-bottom: 20px;
+}
+
+.filter-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.filter-row select,
+.filter-row input {
+    padding: 10px 14px;
+    border: 1px solid var(--color-border, #d1d5db);
+    border-radius: 8px;
+    font-size: 14px;
+    min-width: 150px;
+}
+
+/* Log List */
+.log-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.log-card {
+    padding: 16px;
+    transition: transform 0.2s;
+}
+
+.log-card:hover {
+    transform: translateX(4px);
+}
+
+.log-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.log-time {
+    font-size: 12px;
+    color: var(--color-text-muted, #9ca3af);
+    min-width: 150px;
+}
+
+.log-entity {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-primary, #3b82f6);
+}
+
+.log-body {
+    padding-left: 162px;
+}
+
+.log-detail {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 4px;
+}
+
+.log-user {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.log-number {
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--color-text-secondary, #6b7280);
+}
+
+.log-changes {
+    font-size: 13px;
+    color: var(--color-text-secondary, #6b7280);
+    background: var(--color-surface, #f9fafb);
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+/* Asset Management */
+.asset-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.asset-card {
+    border-left: 4px solid var(--color-primary, #3b82f6);
+}
+
+.asset-card.machine {
+    border-left-color: #8b5cf6;
+}
+
+.asset-card.vehicle {
+    border-left-color: #10b981;
+}
+
+.asset-card.computer {
+    border-left-color: #f59e0b;
+}
+
+.asset-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.asset-name {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.asset-number {
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--color-primary, #3b82f6);
+}
+
+.asset-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.asset-info dt {
+    color: var(--color-text-secondary, #6b7280);
+}
+
+.asset-info dd {
+    font-weight: 600;
+    text-align: right;
+    margin: 0;
+}
+
+.asset-values {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 12px;
+    margin-top: 12px;
+    border-top: 1px solid var(--color-border, #e5e7eb);
+}
+
+.asset-value {
+    text-align: center;
+}
+
+.asset-value-label {
+    font-size: 11px;
+    color: var(--color-text-muted, #9ca3af);
+    display: block;
+}
+
+.asset-value-amount {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.asset-value-amount.book-value {
+    color: var(--color-success, #10b981);
+}
+
+/* Transfer List */
+.transfer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.transfer-card {
+    padding: 16px;
+}
+
+.transfer-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.transfer-number {
+    font-family: monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-primary, #3b82f6);
+}
+
+.transfer-route {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.transfer-location {
+    padding: 8px 16px;
+    background: var(--color-surface, #f3f4f6);
+    border-radius: 8px;
+}
+
+.transfer-arrow {
+    font-size: 20px;
+}
+
+.transfer-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border, #e5e7eb);
+}
+
+/* Empty & Loading States */
+.empty-state,
+.loading-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--color-text-secondary, #6b7280);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .filter-row {
+        flex-wrap: wrap;
+    }
+
+    .log-body {
+        padding-left: 0;
+    }
+}

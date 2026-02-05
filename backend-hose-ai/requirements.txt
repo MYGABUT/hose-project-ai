@@ -1,0 +1,36 @@
+# Core
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# AI & OCR - Using EasyOCR (stable for Python 3.12)
+easyocr>=1.7.0
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Data Processing
+pandas==2.2.0
+numpy<2.0
+
+# Fuzzy Matching
+fuzzywuzzy==0.18.0
+python-Levenshtein==0.24.2
+
+# Image Processing
+Pillow>=10.0.0
+opencv-python-headless==4.9.0.80
+
+# Environment
+python-dotenv==1.0.0
+
+# Note: PaddleOCR removed due to Python 3.12 + Windows compatibility issues
+# EasyOCR is used as a stable alternative
+
+# Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+alembic==1.13.1
+psycopg2-binary
+sqlalchemy
+pydantic
+pydantic-settings

@@ -1,0 +1,303 @@
+/**
+ * Stock Card (Kartu Stok) - Excel Style CSS
+ */
+
+.stock-card-page {
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.page-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.page-subtitle {
+    color: var(--color-text-secondary);
+    margin: 4px 0 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Selector Card */
+.selector-card {
+    margin-bottom: 16px;
+}
+
+.selector-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.selector-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.selector-item label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.selector-item select,
+.selector-item input {
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    min-width: 180px;
+}
+
+.selector-item select {
+    min-width: 300px;
+}
+
+/* Product Info */
+.product-info-card {
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+}
+
+.product-info {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.info-label {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+}
+
+.info-value {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.info-value.sku {
+    font-family: 'Consolas', monospace;
+    color: #1d4ed8;
+    font-weight: 700;
+}
+
+.current-stock .info-value {
+    font-size: 1.25rem;
+    color: #059669;
+    font-weight: 700;
+}
+
+/* Stock Card Table */
+.stock-card-table-card {
+    overflow: hidden;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+.stock-card-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.stock-card-table th,
+.stock-card-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.stock-card-table th {
+    background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #374151;
+    border-bottom: 2px solid #d1d5db;
+}
+
+.stock-card-table tbody tr:hover {
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.stock-card-table tbody tr.row-in {
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.stock-card-table tbody tr.row-out {
+    background: rgba(239, 68, 68, 0.03);
+}
+
+/* Column styles */
+.col-no {
+    width: 40px;
+    text-align: center;
+    color: var(--color-text-secondary);
+}
+
+.col-date {
+    width: 90px;
+    font-family: monospace;
+}
+
+.col-ref {
+    width: 120px;
+}
+
+.ref-badge {
+    font-family: 'Consolas', monospace;
+    font-size: 0.8rem;
+    background: #e0e7ff;
+    color: #3730a3;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.col-desc {
+    min-width: 150px;
+}
+
+.col-num {
+    width: 80px;
+    text-align: right;
+    font-family: 'Consolas', monospace;
+    font-weight: 500;
+}
+
+.col-num.in {
+    color: #059669;
+}
+
+.col-num.out {
+    color: #dc2626;
+}
+
+.col-num.balance {
+    font-weight: 700;
+    color: #1d4ed8;
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.col-ket {
+    min-width: 150px;
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
+}
+
+/* Totals row */
+.totals-row {
+    background: #f3f4f6 !important;
+    font-weight: 700;
+}
+
+.totals-label {
+    text-align: right;
+    padding-right: 20px;
+}
+
+.totals-row .total {
+    font-size: 1rem;
+}
+
+.table-summary {
+    padding: 12px 16px;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+}
+
+/* Empty states */
+.empty-card {
+    padding: 60px;
+}
+
+.empty-prompt {
+    text-align: center;
+    color: var(--color-text-secondary);
+}
+
+.empty-icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 16px;
+}
+
+.empty-prompt h3 {
+    margin: 0 0 8px;
+    color: var(--color-text-primary);
+}
+
+.empty-prompt p {
+    margin: 0;
+}
+
+.loading-state,
+.empty-state {
+    padding: 60px;
+    text-align: center;
+    color: var(--color-text-secondary);
+}
+
+/* Print styles */
+@media print {
+
+    .page-header .header-actions,
+    .selector-card {
+        display: none;
+    }
+
+    .stock-card-page {
+        padding: 0;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .stock-card-page {
+        padding: 16px;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .selector-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .selector-item select,
+    .selector-item input {
+        min-width: 100%;
+    }
+
+    .product-info {
+        flex-direction: column;
+        gap: 16px;
+    }
+}

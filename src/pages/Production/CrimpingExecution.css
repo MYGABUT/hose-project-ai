@@ -1,0 +1,116 @@
+.crimping-execution {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-6);
+    padding-bottom: var(--spacing-4);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.back-button {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-4);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.back-button:hover {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+}
+
+.assembly-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-4);
+    background-color: var(--color-info-light);
+    border-radius: var(--radius-md);
+}
+
+.progress-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-info-dark);
+}
+
+.progress-status {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-info-dark);
+}
+
+.section {
+    margin-bottom: var(--spacing-6);
+}
+
+.machine-settings {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+}
+
+.setting-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.setting-label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.instruction-list {
+    margin: 0;
+    padding-left: var(--spacing-4);
+    list-style-type: disc;
+}
+
+.instruction-list li {
+    margin-bottom: var(--spacing-2);
+    font-weight: var(--font-weight-medium);
+}
+
+.instruction-list li:last-child {
+    margin-bottom: 0;
+}
+
+.action-section {
+    margin-top: var(--spacing-8);
+    padding-top: var(--spacing-6);
+    border-top: 2px solid var(--color-border);
+}
+
+.action-hint {
+    text-align: center;
+    margin-top: var(--spacing-3);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        gap: var(--spacing-3);
+        align-items: flex-start;
+    }
+
+    .assembly-progress {
+        width: 100%;
+        justify-content: center;
+    }
+}

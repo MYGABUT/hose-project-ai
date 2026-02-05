@@ -1,0 +1,210 @@
+.access-timer-wrapper {
+    position: relative;
+}
+
+.access-timer {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+    border: 2px solid #2196f3;
+    border-radius: var(--radius-full);
+    animation: timerPulse 2s ease-in-out infinite;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.access-timer:hover {
+    transform: scale(1.02);
+}
+
+@keyframes timerPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2);
+    }
+}
+
+.access-timer.urgent {
+    background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+    border-color: #ff9800;
+    animation: timerPulse 1.5s ease-in-out infinite;
+}
+
+.access-timer.urgent .timer-value {
+    color: #e65100;
+}
+
+.access-timer.critical {
+    background: linear-gradient(135deg, #ffebee, #ffcdd2);
+    border-color: #f44336;
+    animation: criticalPulse 0.5s ease-in-out infinite;
+}
+
+@keyframes criticalPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4);
+    }
+
+    50% {
+        transform: scale(1.02);
+        box-shadow: 0 0 0 6px rgba(244, 67, 54, 0.2);
+    }
+}
+
+.access-timer.critical .timer-value {
+    color: #c62828;
+}
+
+.timer-icon {
+    font-size: 1rem;
+}
+
+.timer-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+}
+
+.timer-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    line-height: 1;
+}
+
+.timer-value {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-bold);
+    font-family: var(--font-family-mono);
+    color: var(--color-primary);
+    line-height: 1;
+}
+
+.timer-badge {
+    padding: 2px 6px;
+    background-color: white;
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-secondary);
+}
+
+.grace-badge {
+    padding: 2px 6px;
+    background-color: #e3f2fd;
+    border: 1px solid #2196f3;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    color: #1565c0;
+}
+
+/* Dropdown */
+.timer-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: var(--spacing-2);
+    min-width: 280px;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    z-index: var(--z-dropdown);
+    animation: dropdownFade 0.2s ease-out;
+}
+
+@keyframes dropdownFade {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.timer-dropdown .dropdown-header {
+    padding: var(--spacing-3);
+    border-bottom: 1px solid var(--color-border);
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-sm);
+}
+
+.grant-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-3);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.grant-item:last-of-type {
+    border-bottom: none;
+}
+
+.grant-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+}
+
+.grant-feature {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+}
+
+.grant-time {
+    font-size: var(--font-size-xs);
+    font-family: var(--font-family-mono);
+    color: var(--color-primary);
+    font-weight: var(--font-weight-bold);
+}
+
+.early-finish-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.early-finish-btn:hover {
+    background-color: var(--color-danger-light);
+    border-color: var(--color-danger);
+}
+
+.timer-dropdown .dropdown-footer {
+    padding: var(--spacing-2) var(--spacing-3);
+    background-color: var(--color-background);
+    border-top: 1px solid var(--color-border);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.timer-dropdown .dropdown-footer small {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+.timer-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-dropdown) - 1);
+}
