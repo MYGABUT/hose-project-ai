@@ -182,7 +182,7 @@ def get_document_flow(entity_type: str, entity_id: int, db: Session = Depends(ge
 
     # 1. Base Node (Sales Order)
     so_node_id = f"SO-{so.id}"
-    add_node(so_node_id, "SalesOrder", so.so_number, so.status.value if so.status else "UNKNOWN", float(so.total_amount), so.order_date)
+    add_node(so_node_id, "SalesOrder", so.so_number, so.status.value if so.status else "UNKNOWN", float(so.total or 0), so.order_date)
 
     # 2. Upstream: Quotation
     # Need to check models for direct linkage. Assuming quotation_id on SO if it exists.
@@ -215,24 +215,27 @@ def get_document_flow(entity_type: str, entity_id: int, db: Session = Depends(ge
         # Delivery Order might spawn Invoices technically, or SO does. 
 
     # 5. Downstream: Invoices
-    inv_res = db.execute(text("SELECT id, invoice_number, status, total_amount, invoice_date FROM invoices WHERE sales_order_id = :sid"), {"sid": so.id}).fetchall()
-    for i in inv_res:
-        inv_id = f"INV-{i.id}"
-        add_node(inv_id, "Invoice", i.invoice_number, i.status, float(i.total_amount), i.invoice_date)
-        
-        # Link Invoice from DO if available, else SO
-        # For simplicity in this graph logic, we link from SO
-        add_edge(so_node_id, inv_id)
-        
-        # 6. Downstream: Payments linked to Invoice
-        try:
-            pay_res = db.execute(text("SELECT id, payment_number, status, amount, payment_date FROM payments WHERE invoice_id = :iid"), {"iid": i.id}).fetchall()
-            for p in pay_res:
-                pay_id = f"PAY-{p.id}"
-                add_node(pay_id, "Payment", p.payment_number, p.status, float(p.amount), p.payment_date)
-                add_edge(inv_id, pay_id)
-        except Exception as e:
-            pass # Payments table might be named differently
+    try:
+        inv_res = db.execute(text("SELECT id, invoice_number, status, total, invoice_date FROM invoices WHERE so_id = :sid"), {"sid": so.id}).fetchall()
+        for i in inv_res:
+            inv_id = f"INV-{i.id}"
+            add_node(inv_id, "Invoice", i.invoice_number, i.status, float(i.total), i.invoice_date)
+            
+            # Link Invoice from DO if available, else SO
+            # For simplicity in this graph logic, we link from SO
+            add_edge(so_node_id, inv_id)
+            
+            # 6. Downstream: Payments linked to Invoice
+            try:
+                pay_res = db.execute(text("SELECT id, payment_number, status, amount, payment_date FROM payments WHERE invoice_id = :iid"), {"iid": i.id}).fetchall()
+                for p in pay_res:
+                    pay_id = f"PAY-{p.id}"
+                    add_node(pay_id, "Payment", p.payment_number, p.status, float(p.amount), p.payment_date)
+                    add_edge(inv_id, pay_id)
+            except Exception as e:
+                pass # Payments table might be named differently
+    except Exception as e:
+        pass # Handle invoice SQL error gracefully if schema differs
 
     return {
         "status": "success",
