@@ -172,7 +172,7 @@ export default function SalesOrders() {
                 <div className="header-actions">
                     <Button
                         variant="secondary"
-                        onClick={() => navigate('/production/piutang')}
+                        onClick={() => navigate('/finance/aging')}
                     >
                         💳 Piutang
                     </Button>

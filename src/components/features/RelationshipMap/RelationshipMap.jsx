@@ -99,7 +99,15 @@ export default function RelationshipMap({ entityType, entityId }) {
             setError(null);
             try {
                 const res = await fetch(`${API_BASE_URL}/api/v1/traceability/document-flow/${entityType}/${entityId}`);
-                if (!res.ok) throw new Error("Gagal mengambil data relationship map");
+                if (!res.ok) {
+                    // Try to read API error detail
+                    let errMsg = `HTTP ${res.status}`;
+                    try {
+                        const errBody = await res.json();
+                        errMsg = errBody.detail || errBody.message || errMsg;
+                    } catch { }
+                    throw new Error(errMsg);
+                }
 
                 const json = await res.json();
                 if (json.status === 'success') {
