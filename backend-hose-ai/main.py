@@ -32,7 +32,7 @@ from app.api.v1.endpoints import (
     invoice_ingestion, rack_management, crm, sales_intelligence,
     smart_quotation, smart_procurement, warehouse_velocity,
     production_security, honeypot, jo_profitability, jo_disassembly,
-    so_payments, product_pricing
+    so_payments, product_pricing, intercompany_loans
 )
 from app.api.v1.endpoints import settings as settings_endpoints
 
@@ -60,6 +60,7 @@ ROUTER_REGISTRY = [
     (warehouse_transfer.router, "/api/v1",                      ["Inventory - Warehouse Transfer"]),
     (rack_management.router,    "/api/v1",                      ["Warehouse - Rack Management"]),
     (loans.router,              "/api/v1",                      ["Inventory - Loan"]),
+    (intercompany_loans.router, "/api/v1",                      ["Inventory - B2B Sync"]),
     (bookings.router,           "/api/v1",                      ["Inventory - Booking"]),
     (warehouse_velocity.router, "/api/v1",                      ["Warehouse Velocity"]),
 

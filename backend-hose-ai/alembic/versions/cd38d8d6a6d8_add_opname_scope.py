@@ -20,8 +20,14 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Add scope columns to stock_opnames
-    op.add_column('stock_opnames', sa.Column('scope_type', sa.String(length=20), nullable=True))
-    op.add_column('stock_opnames', sa.Column('scope_value', sa.String(length=100), nullable=True))
+    conn = op.get_bind()
+    insp = sa.inspect(conn)
+    columns = [col['name'] for col in insp.get_columns('stock_opnames')]
+    
+    if 'scope_type' not in columns:
+        op.add_column('stock_opnames', sa.Column('scope_type', sa.String(length=20), nullable=True))
+    if 'scope_value' not in columns:
+        op.add_column('stock_opnames', sa.Column('scope_value', sa.String(length=100), nullable=True))
     
     # Set default value for existing rows
     op.execute("UPDATE stock_opnames SET scope_type = 'ALL'")

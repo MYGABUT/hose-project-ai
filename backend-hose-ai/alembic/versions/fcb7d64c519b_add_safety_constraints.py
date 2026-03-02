@@ -22,17 +22,25 @@ def upgrade() -> None:
     # 1. Drop Hose Rolls (Cleanup Phase 9)
     # Check if table exists first to avoid errors if already dropped? 
     # Standard alembic just tries.
-    op.drop_index(op.f('ix_hose_rolls_brand'), table_name='hose_rolls')
-    op.drop_index(op.f('ix_hose_rolls_id'), table_name='hose_rolls')
-    op.drop_index(op.f('ix_hose_rolls_roll_id'), table_name='hose_rolls')
-    op.drop_table('hose_rolls')
+    conn = op.get_bind()
+    insp = sa.inspect(conn)
+    if 'hose_rolls' in insp.get_table_names():
+        op.drop_index(op.f('ix_hose_rolls_brand'), table_name='hose_rolls')
+        op.drop_index(op.f('ix_hose_rolls_id'), table_name='hose_rolls')
+        op.drop_index(op.f('ix_hose_rolls_roll_id'), table_name='hose_rolls')
+        op.drop_table('hose_rolls')
 
     # 2. Add Safety Gate (Phase 10)
-    op.create_check_constraint(
-        "check_positive_qty",
-        "inventory_batches",
-        "current_qty >= 0"
-    )
+    # Check if constraint exists before adding
+    constraint_check = conn.execute(sa.text(
+        "SELECT 1 FROM pg_constraint WHERE conname = 'check_positive_qty'"
+    )).fetchone()
+    if not constraint_check:
+        op.create_check_constraint(
+            "check_positive_qty",
+            "inventory_batches",
+            "current_qty >= 0"
+        )
 
 
 def downgrade() -> None:

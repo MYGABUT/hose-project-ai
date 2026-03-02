@@ -493,6 +493,17 @@ async def complete_delivery_order(
                         if batch.current_qty == 0:
                             batch.status = BatchStatus.CONSUMED.value
                             
+                        # B2B SYNC HOOK: If this is a consignment stock, report sale to Lender
+                        if batch.source_type == "B2B_LOAN" and batch.barcode and batch.barcode.startswith("B2B-"):
+                            try:
+                                loan_item_id = int(batch.barcode.split('-')[-1])
+                                from app.models.intercompany_loan import InterCompanyLoanItem
+                                loan_item = db.query(InterCompanyLoanItem).get(loan_item_id)
+                                if loan_item:
+                                    loan_item.qty_sold = float((loan_item.qty_sold or 0) + deduct)
+                            except Exception as e:
+                                print(f"Failed to sync B2B Loan: {e}")
+                            
                         batches_deducted.append({
                             "batch": batch.batch_number,
                             "deducted": deduct,
@@ -534,6 +545,17 @@ async def complete_delivery_order(
                         if batch.current_qty == 0:
                             batch.status = BatchStatus.CONSUMED.value
                         
+                        # B2B SYNC HOOK: If this is a consignment stock, report sale to Lender
+                        if batch.source_type == "B2B_LOAN" and batch.barcode and batch.barcode.startswith("B2B-"):
+                            try:
+                                loan_item_id = int(batch.barcode.split('-')[-1])
+                                from app.models.intercompany_loan import InterCompanyLoanItem
+                                loan_item = db.query(InterCompanyLoanItem).get(loan_item_id)
+                                if loan_item:
+                                    loan_item.qty_sold = float((loan_item.qty_sold or 0) + deduct)
+                            except Exception as e:
+                                print(f"Failed to sync B2B Loan: {e}")
+                                
                         batches_deducted.append({
                             "batch": batch.batch_number,
                             "deducted": deduct,

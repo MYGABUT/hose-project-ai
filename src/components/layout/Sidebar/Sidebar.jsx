@@ -335,10 +335,20 @@ const menuItems = [
             },
             {
                 path: '/inventory/loans',
-                label: 'Pinjam Barang (Loan)',
+                label: 'Pinjam Barang (Customer)',
                 icon: (
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                    </svg>
+                )
+            },
+            {
+                path: '/inventory/inter-company-loans',
+                label: 'Pinjaman B2B (Titipan)',
+                icon: (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
                     </svg>
                 )
             },

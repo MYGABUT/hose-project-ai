@@ -46,6 +46,7 @@ const StockCard = lazy(() => import('./pages/Inventory/StockCard'));
 const InventoryControlTower = lazy(() => import('./pages/Inventory/InventoryControlTower'));
 const ProductImportPage = lazy(() => import('./pages/Inventory/ProductImportPage'));
 const ProductLoanPage = lazy(() => import('./pages/Inventory/ProductLoanPage'));
+const InterCompanyLoanPage = lazy(() => import('./pages/Inventory/InterCompanyLoanPage'));
 const StockBookingPage = lazy(() => import('./pages/Inventory/StockBookingPage'));
 const OpnameVarianceReport = lazy(() => import('./pages/Inventory/OpnameVarianceReport'));
 
@@ -200,6 +201,7 @@ function App() {
                           <Route path="inventory/map" element={<WarehouseMap />} />
                           <Route path="inventory/racks" element={<RackManager />} />
                           <Route path="inventory/loans" element={<ProductLoanPage />} />
+                          <Route path="inventory/inter-company-loans" element={<InterCompanyLoanPage />} />
                           <Route path="inventory/bookings" element={<StockBookingPage />} />
                           <Route path="fittings" element={<StokFitting />} />
                           <Route path="products" element={<MasterProduk />} />

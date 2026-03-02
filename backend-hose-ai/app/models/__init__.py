@@ -48,6 +48,7 @@ from app.models.project import Project, WorkOrder, SPPD, DailyReport, Commission
 from app.models.customer_asset import CustomerAsset, AssetComponent, AssetHMLog
 from app.models.invoice_inbox import InvoiceInbox
 from app.models.crm import CRMLead, LeadStatus
+from app.models.intercompany_loan import InterCompanyLoan, InterCompanyLoanItem
 
 __all__ = [
     # Enums
@@ -122,8 +123,11 @@ __all__ = [
     "CustomerAsset",
     "AssetComponent",
     "AssetComponent",
+    "AssetComponent",
     "AssetHMLog",
     "InvoiceInbox",
     "CRMLead",
     "LeadStatus",
+    "InterCompanyLoan",
+    "InterCompanyLoanItem",
 ]
