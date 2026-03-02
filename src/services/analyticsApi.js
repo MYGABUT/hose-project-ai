@@ -3,11 +3,15 @@
  * Dashboard metrics and reports
  */
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
+import { getAuthHeader } from './api';
+
+const API_BASE_URL = import.meta.env.VITE_AI_API_URL || "";
 
 export async function getDashboardSummary(period = 'month') {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/summary?period=${period}`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/summary?period=${period}`, {
+            headers: { ...getAuthHeader() }
+        });
         if (!response.ok) throw new Error('Failed to fetch summary');
         return await response.json();
     } catch (error) {
@@ -20,7 +24,9 @@ export const getSummaryStats = getDashboardSummary;
 
 export async function getActiveJobs() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/active-jobs`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/active-jobs`, {
+            headers: { ...getAuthHeader() }
+        });
         if (!response.ok) throw new Error('Failed to fetch active jobs');
         return await response.json();
     } catch (error) {
@@ -31,7 +37,9 @@ export async function getActiveJobs() {
 
 export async function getLowStockAlerts() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/low-stock`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/low-stock`, {
+            headers: { ...getAuthHeader() }
+        });
         if (!response.ok) throw new Error('Failed to fetch alerts');
         return await response.json();
     } catch (error) {
@@ -42,7 +50,9 @@ export async function getLowStockAlerts() {
 
 export async function getSalesTrend() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/sales-trend`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/sales-trend`, {
+            headers: { ...getAuthHeader() }
+        });
         if (!response.ok) throw new Error('Failed to fetch trend');
         return await response.json();
     } catch (error) {
@@ -52,7 +62,9 @@ export async function getSalesTrend() {
 
 export async function getDeadStock() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/dead-stock`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/dead-stock`, {
+            headers: { ...getAuthHeader() }
+        });
         if (!response.ok) throw new Error('Failed to fetch dead stock');
         return await response.json();
     } catch (error) {
@@ -62,7 +74,9 @@ export async function getDeadStock() {
 
 export async function getSalesByCategory() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/sales-by-category`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/sales-by-category`, {
+            headers: { ...getAuthHeader() }
+        });
         if (!response.ok) throw new Error('Failed to fetch sales by category');
         return await response.json();
     } catch (error) {
@@ -72,7 +86,9 @@ export async function getSalesByCategory() {
 
 export async function getTopSelling() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/top-selling`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/top-selling`, {
+            headers: { ...getAuthHeader() }
+        });
         if (!response.ok) throw new Error('Failed to fetch top selling');
         return await response.json();
     } catch (error) {
@@ -82,7 +98,9 @@ export async function getTopSelling() {
 
 export async function getQCStats() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/qc-stats`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/qc-stats`, {
+            headers: { ...getAuthHeader() }
+        });
         if (!response.ok) throw new Error('Failed to fetch QC stats');
         return await response.json();
     } catch (error) {
@@ -92,7 +110,9 @@ export async function getQCStats() {
 
 export async function getProductionStats() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/production-stats`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/production-stats`, {
+            headers: { ...getAuthHeader() }
+        });
         if (!response.ok) throw new Error('Failed to fetch production stats');
         return await response.json();
     } catch (error) {
@@ -102,7 +122,9 @@ export async function getProductionStats() {
 
 export async function getRestockPrediction(days = 30) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/restock-prediction?days=${days}`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/analytics/restock-prediction?days=${days}`, {
+            headers: { ...getAuthHeader() }
+        });
         if (!response.ok) throw new Error('Failed to fetch prediction');
         return await response.json();
     } catch (error) {

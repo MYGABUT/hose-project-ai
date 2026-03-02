@@ -3,9 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import Card from '../../components/common/Card/Card';
 import Button from '../../components/common/Button/Button';
 import { getSalesOrders, confirmSalesOrder, createJobFromSO } from '../../services/productionApi';
+import RelationshipMap from '../../components/features/RelationshipMap/RelationshipMap';
+import PrintableDocument from '../../components/common/PrintableDocument/PrintableDocument';
+import api from '../../services/api';
 import './Production.css';
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_AI_API_URL || "";
 
 const STATUS_BADGES = {
     DRAFT: { label: 'Draft', color: 'gray' },
@@ -35,6 +38,10 @@ export default function SalesOrders() {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentLoading, setPaymentLoading] = useState(false);
+
+    // Relationship Map Modal
+    const [showMapModal, setShowMapModal] = useState(false);
+    const [mapEntity, setMapEntity] = useState({ type: null, id: null });
 
     useEffect(() => {
         loadOrders();
@@ -79,6 +86,28 @@ export default function SalesOrders() {
         setSelectedOrder(order);
         setPaymentAmount('');
         setShowPaymentModal(true);
+    };
+
+    const handleOpenMap = (order) => {
+        setMapEntity({ type: 'so', id: order.id });
+        setShowMapModal(true);
+    };
+
+    const handleCancelOrder = async (order) => {
+        if (!window.confirm(`Batalkan SO ${order.so_number}? Semua JO terkait juga akan dibatalkan.`)) return;
+        setActionLoading(order.id);
+        try {
+            await api.post(`/so/${order.id}/cancel?reason_lost=Dibatalkan+manual&cancelled_by=Admin`);
+            loadOrders();
+        } catch (err) {
+            alert('Gagal membatalkan SO: ' + (err?.response?.data?.detail || err.message));
+        }
+        setActionLoading(null);
+    };
+
+    const handlePrintSO = (order) => {
+        setSelectedOrder(order);
+        setTimeout(() => window.print(), 300);
     };
 
     const handleRecordPayment = async () => {
@@ -256,6 +285,30 @@ export default function SalesOrders() {
                                                 👁️ View JO
                                             </Button>
                                         )}
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() => handleOpenMap(order)}
+                                        >
+                                            🌐 Trace
+                                        </Button>
+                                        {!['CANCELLED', 'COMPLETED'].includes(order.status) && (
+                                            <Button
+                                                variant="danger"
+                                                size="sm"
+                                                onClick={() => handleCancelOrder(order)}
+                                                loading={actionLoading === order.id}
+                                            >
+                                                ❌ Cancel
+                                            </Button>
+                                        )}
+                                        <button
+                                            className="print-btn"
+                                            style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                                            onClick={() => handlePrintSO(order)}
+                                        >
+                                            🖨️ Print
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
@@ -375,6 +428,36 @@ export default function SalesOrders() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Relationship Map Modal */}
+            {showMapModal && (
+                <div className="modal-overlay" onClick={() => setShowMapModal(false)}>
+                    <div className="modal-content" style={{ maxWidth: '900px', width: '90vw' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>🌐 Traceability: Document Relationship Map</h3>
+                            <button onClick={() => setShowMapModal(false)}>✕</button>
+                        </div>
+                        <div className="modal-body" style={{ padding: '0' }}>
+                            <RelationshipMap entityType={mapEntity.type} entityId={mapEntity.id} />
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Printable Document (hidden on screen, shown on print) */}
+            {selectedOrder && (
+                <PrintableDocument
+                    docType="SALES ORDER"
+                    docNumber={selectedOrder.so_number}
+                    docDate={selectedOrder.order_date ? new Date(selectedOrder.order_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}
+                    customerName={selectedOrder.customer_name}
+                    customerInfo={{ phone: selectedOrder.customer_phone, address: selectedOrder.customer_address }}
+                    lines={selectedOrder.lines || []}
+                    subtotal={selectedOrder.subtotal || selectedOrder.total || 0}
+                    tax={selectedOrder.tax || 0}
+                    total={selectedOrder.total || 0}
+                    notes={selectedOrder.notes || ''}
+                />
             )}
         </div>
     );

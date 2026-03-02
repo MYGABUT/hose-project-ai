@@ -14,7 +14,7 @@ numpy<2.0
 
 # Fuzzy Matching
 fuzzywuzzy==0.18.0
-python-Levenshtein==0.24.2
+python-Levenshtein
 
 # Image Processing
 Pillow>=10.0.0
@@ -29,8 +29,26 @@ python-dotenv==1.0.0
 # Security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+argon2-cffi>=23.1.0
+slowapi>=0.1.9
 alembic==1.13.1
 psycopg2-binary
 sqlalchemy
 pydantic
 pydantic-settings
+
+# Async DB Driver (Architecture Modernization)
+asyncpg>=0.29.0
+
+# GraphQL (Hybrid REST+GraphQL Architecture)
+# strawberry-graphql[fastapi]>=0.220.0
+
+openpyxl>=3.1.2
+xlsxwriter>=3.1.9
+
+gspread>=6.0.0
+oauth2client>=4.1.3
+
+pytesseract
+
+pdf2image

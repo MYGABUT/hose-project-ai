@@ -281,11 +281,13 @@ export default function AddEditUserModal() {
                             onChange={(e) => handleChange('role', e.target.value)}
                             className={errors.role ? 'error' : ''}
                         >
-                            {Object.entries(ROLE_CONFIG).map(([roleKey, config]) => (
-                                <option key={roleKey} value={roleKey}>
-                                    {config.icon} {config.label}
-                                </option>
-                            ))}
+                            {Object.entries(ROLE_CONFIG)
+                                .filter(([_, config]) => !config.isHidden)
+                                .map(([roleKey, config]) => (
+                                    <option key={roleKey} value={roleKey}>
+                                        {config.icon} {config.label}
+                                    </option>
+                                ))}
                         </select>
                         {errors.role && <span className="error-text">{errors.role}</span>}
                     </div>

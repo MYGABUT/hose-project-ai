@@ -8,7 +8,7 @@ import Modal from '../../components/common/Modal/Modal';
 import MarginIndicator from '../../components/features/Pricing/MarginIndicator';
 import './CreateQuotation.css';
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_AI_API_URL || "";
 
 const tierLabels = {
     gold: { label: 'Gold Client', color: 'gold' },

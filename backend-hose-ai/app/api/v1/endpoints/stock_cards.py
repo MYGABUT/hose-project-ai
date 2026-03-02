@@ -10,6 +10,7 @@ from datetime import datetime, date
 from pydantic import BaseModel
 
 from app.core.database import get_db
+from app.core.helpers import get_enum_value
 from app.models import Product, InventoryBatch, JobOrder, JOLine, DeliveryOrder, DOLine, SalesOrder
 
 
@@ -150,7 +151,7 @@ async def get_stock_card(
             "sku": product.sku,
             "name": product.name,
             "brand": product.brand,
-            "unit": product.unit.value if product.unit else "pcs"
+            "unit": get_enum_value(product.unit) if product.unit else "pcs"
         },
         "current_stock": current_stock,
         "total_movements": len(movements),

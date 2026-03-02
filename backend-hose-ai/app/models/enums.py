@@ -6,31 +6,70 @@ import enum
 
 
 class LocationType(str, enum.Enum):
-    """Types of storage locations"""
-    HOSE_RACK = "HOSE_RACK"
-    FITTING_BIN = "FITTING_BIN"
-    STAGING_AREA = "STAGING_AREA"
+    """Types of storage locations (Zone-based warehouse)"""
+    # Hose Storage
+    HOSE_RACK = "HOSE_RACK"           # Rak slang gulungan/coil
+    HOSE_REEL = "HOSE_REEL"           # Reel besar (industrial hose)
+    HOSE_CUT_BIN = "HOSE_CUT_BIN"     # Bin untuk potongan hose
+    # Fitting & Adapter Storage
+    FITTING_BIN = "FITTING_BIN"       # Rak bin kecil untuk fitting
+    ADAPTER_SHELF = "ADAPTER_SHELF"   # Rak adapter & QRC
+    # Operational Areas
+    ASSEMBLY_BENCH = "ASSEMBLY_BENCH" # Meja kerja crimping/assembly
+    STAGING_AREA = "STAGING_AREA"     # Area staging (DO pickup)
+    RECEIVING = "RECEIVING"           # Area penerimaan barang
+    # Return & Disposal
     RETURN_AREA = "RETURN_AREA"
+    QC_AREA = "QC_AREA"              # Area inspeksi kualitas
     SCRAP = "SCRAP"
-    RECEIVING = "RECEIVING"
 
 
 class ProductCategory(str, enum.Enum):
-    """Product categories"""
-    HOSE = "HOSE"
-    FITTING = "FITTING"
-    ASSEMBLY = "ASSEMBLY"
-    ACCESSORY = "ACCESSORY"
-    CONNECTOR = "CONNECTOR"
-    ADAPTER = "ADAPTER"
+    """Product categories — Hydraulink Standard"""
+    # Hoses
+    HYDRAULIC_HOSE = "HYDRAULIC_HOSE"     # Braided, Multispiral (SAE 100R1-R17)
+    INDUSTRIAL_HOSE = "INDUSTRIAL_HOSE"   # Air, Water, Suction, Chemical
+    SPECIALTY_HOSE = "SPECIALTY_HOSE"     # Thermoplastic, PTFE/Teflon
+    HOSE = "HOSE"                         # Legacy/generic (backward compat)
+    # Fittings
+    CRIMP_FITTING = "CRIMP_FITTING"       # One-piece / Two-piece swage
+    REUSABLE_FITTING = "REUSABLE_FITTING" # Field attachable
+    FITTING = "FITTING"                   # Legacy/generic
+    # Connectors & Adapters
+    ADAPTER = "ADAPTER"                   # BSP, JIC, ORFS, NPT
+    QUICK_COUPLING = "QUICK_COUPLING"     # QRC, Push-to-connect
+    CONNECTOR = "CONNECTOR"               # Legacy/generic
+    # Assemblies & Accessories
+    HOSE_ASSEMBLY = "HOSE_ASSEMBLY"       # Pre-crimped ready-to-use
+    ASSEMBLY = "ASSEMBLY"                 # Legacy/generic
+    ACCESSORY = "ACCESSORY"               # Clamps, spiraguard, o-rings, ferrules
+    # Support Equipment
+    VALVE = "VALVE"                       # Ball valves, check valves
+    PIPE_TUBE = "PIPE_TUBE"              # Steel pipe, tube, tube clamps
+    TOOL = "TOOL"                         # Saws, swagers, test equipment
 
 
 class ProductUnit(str, enum.Enum):
     """Units of measurement"""
-    METER = "METER"
-    PCS = "PCS"
-    SET = "SET"
-    ROLL = "ROLL"
+    METER = "METER"   # Slang per meter
+    PCS = "PCS"       # Fitting, adapter, coupling
+    SET = "SET"       # Assembly set
+    ROLL = "ROLL"     # Gulungan (50m, 100m)
+    BOX = "BOX"       # Dus (fitting bulk)
+    KG = "KG"         # Berat (material besi)
+    LITER = "LITER"   # Cairan (oli, lubricant)
+    FEET = "FEET"     # Imperial measurement
+
+
+class ProductForm(str, enum.Enum):
+    """Physical form of the product for inventory input"""
+    FULL_ROLL = "FULL_ROLL"       # Gulungan utuh (e.g., 50m, 100m)
+    CUT_LENGTH = "CUT_LENGTH"     # Potongan sesuai pesanan
+    COIL = "COIL"                 # Coil (smaller than roll)
+    STRAIGHT = "STRAIGHT"         # Lurus (rigid pipe/tube)
+    LOOSE = "LOOSE"               # Satuan lepas (fitting, adapter)
+    BOXED = "BOXED"               # Dalam kemasan dus
+    ASSEMBLED = "ASSEMBLED"       # Sudah di-crimping (hose assembly)
 
 
 class AliasType(str, enum.Enum):
@@ -81,17 +120,20 @@ class MovementType(str, enum.Enum):
 class SOStatus(str, enum.Enum):
     """Sales Order status"""
     DRAFT = "DRAFT"
+    PENDING_APPROVAL = "PENDING_APPROVAL"
     CONFIRMED = "CONFIRMED"
     PARTIAL_JO = "PARTIAL_JO"
     FULL_JO = "FULL_JO"
     PARTIAL_DELIVERED = "PARTIAL_DELIVERED"
     COMPLETED = "COMPLETED"
+    INVOICED = "INVOICED"
     CANCELLED = "CANCELLED"
 
 
 class JOStatus(str, enum.Enum):
-    """Job Order status"""
+    """Job Order status — Production Security State Machine"""
     DRAFT = "DRAFT"
+    CONFIRMED = "CONFIRMED"                    # Manager approved
     MATERIALS_RESERVED = "MATERIALS_RESERVED"
     IN_PROGRESS = "IN_PROGRESS"
     QC_PENDING = "QC_PENDING"
@@ -110,6 +152,17 @@ class JOMaterialStatus(str, enum.Enum):
     RETURNED = "RETURNED"        # Sisa dikembalikan ke rak
 
 
+class POStatus(str, enum.Enum):
+    """Purchase Order status"""
+    DRAFT = "DRAFT"
+    APPROVED = "APPROVED"
+    ORDERED = "ORDERED"
+    PARTIAL_RECEIVED = "PARTIAL_RECEIVED"
+    RECEIVED = "RECEIVED"
+    PAID = "PAID"
+    CANCELLED = "CANCELLED"
+
+
 class DOStatus(str, enum.Enum):
     """Delivery Order status"""
     DRAFT = "DRAFT"
@@ -118,6 +171,15 @@ class DOStatus(str, enum.Enum):
     SHIPPED = "SHIPPED"
     DELIVERED = "DELIVERED"
     CANCELLED = "CANCELLED"
+
+
+class InvoiceStatus(str, enum.Enum):
+    """Invoice status"""
+    DRAFT = "DRAFT"
+    SENT = "SENT"
+    PAID = "PAID"
+    CANCELLED = "CANCELLED"
+
 
 
 class ReturnStatus(str, enum.Enum):
@@ -135,3 +197,15 @@ class QCResult(str, enum.Enum):
     GOOD = "GOOD"
     DAMAGED = "DAMAGED"
     SCRAP = "SCRAP"
+
+
+class QCFailureReason(str, enum.Enum):
+    """QC Failure reasons — ISO 9001 CAPA compliance"""
+    WRONG_CRIMP = "WRONG_CRIMP"          # Salah tekanan crimp
+    LEAK = "LEAK"                        # Kebocoran saat tes
+    WRONG_DIMENSION = "WRONG_DIMENSION"  # Panjang/ukuran salah
+    WRONG_FITTING = "WRONG_FITTING"      # Fitting tidak sesuai spec
+    MATERIAL_DEFECT = "MATERIAL_DEFECT"  # Cacat bahan baku
+    PRESSURE_FAIL = "PRESSURE_FAIL"      # Gagal tes tekanan
+    VISUAL_DEFECT = "VISUAL_DEFECT"      # Cacat visual (kink, deformasi)
+    OTHER = "OTHER"                      # Lainnya (wajib isi notes)

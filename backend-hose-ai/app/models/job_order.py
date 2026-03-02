@@ -7,7 +7,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
-from app.models.enums import JOStatus, JOMaterialStatus
+from app.models.enums import JOStatus, JOMaterialStatus, QCFailureReason
 
 
 class JobOrder(Base):
@@ -41,6 +41,11 @@ class JobOrder(Base):
     assigned_to = Column(String(100))  # Teknisi yang mengerjakan
     workstation = Column(String(50))   # Meja kerja
     
+    # Production Security — Digital Signatures (who approved each stage)
+    confirmed_by = Column(String(100))    # Manager who approved CONFIRMED
+    started_by = Column(String(100))      # Head Prod who started IN_PROGRESS
+    qc_inspector = Column(String(100))    # QC Inspector (must != assigned_to)
+    
     # Dates
     start_date = Column(DateTime(timezone=True))
     due_date = Column(DateTime(timezone=True))
@@ -56,6 +61,9 @@ class JobOrder(Base):
     
     # Notes
     notes = Column(Text)
+    
+    # Assembly flag — if False, JO skips cutting wizard → Ready for Delivery
+    requires_assembly = Column(Boolean, default=True)
     
     # Tracking
     created_by = Column(String(50))
@@ -92,6 +100,7 @@ class JobOrder(Base):
             "total_steps": self.total_steps,
             "progress_percent": self.progress_percent,
             "total_hpp": self.total_hpp,
+            "requires_assembly": self.requires_assembly,
             "notes": self.notes,
             "lines": [line.to_dict() for line in self.lines] if self.lines else [],
             "created_at": self.created_at.isoformat() if self.created_at else None,
@@ -110,6 +119,7 @@ class JobOrder(Base):
             "current_step": self.current_step,
             "total_steps": self.total_steps,
             "progress_percent": self.progress_percent,
+            "requires_assembly": self.requires_assembly,
             "line_count": len(self.lines) if self.lines else 0,
         }
 
@@ -150,6 +160,17 @@ class JOLine(Base):
     
     # Total material needed
     total_hose_length = Column(Float)  # cut_length x qty_ordered
+    
+    # ====== PRODUCTION SECURITY — NAHAD/ISO Traceability ======
+    serial_number = Column(String(50), unique=True, index=True)  # Unique SN per assembly
+    crimped_by = Column(String(100))          # User ID of technician
+    crimped_at = Column(DateTime(timezone=True))  # Exact timestamp
+    machine_id = Column(String(50))           # Crimping machine asset ID
+    pressure_test_bar = Column(Float)         # Test pressure (1.5x WP)
+    test_duration_sec = Column(Integer)       # Duration in seconds
+    qc_result = Column(String(20))            # PASS / FAIL
+    qc_failure_reason = Column(String(50))    # QCFailureReason enum value
+    qc_notes = Column(Text)                   # Mandatory if FAIL
     
     # Notes
     notes = Column(Text)

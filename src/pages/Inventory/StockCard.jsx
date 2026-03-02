@@ -6,9 +6,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Card from '../../components/common/Card/Card';
 import Button from '../../components/common/Button/Button';
+import BatchDetailModal from '../../components/features/Inventory/BatchDetailModal';
 import './StockCard.css';
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_AI_API_URL || "";
 
 export default function StockCard() {
     const navigate = useNavigate();
@@ -21,6 +22,9 @@ export default function StockCard() {
     const [movements, setMovements] = useState([]);
     const [currentStock, setCurrentStock] = useState(0);
     const [loading, setLoading] = useState(false);
+
+    // Batch detail modal
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
     // Filters
     const [startDate, setStartDate] = useState('');
@@ -184,7 +188,17 @@ export default function StockCard() {
                         </div>
                         <div className="info-item current-stock">
                             <span className="info-label">Stok Saat Ini:</span>
-                            <span className="info-value">{currentStock} {productInfo.unit}</span>
+                            <span className="info-value">
+                                {currentStock} {productInfo.unit}
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    style={{ marginLeft: '1rem' }}
+                                    onClick={() => setIsDetailModalOpen(true)}
+                                >
+                                    ℹ️ Detail Isi Batch
+                                </Button>
+                            </span>
                         </div>
                     </div>
                 </Card>
@@ -266,6 +280,12 @@ export default function StockCard() {
                     </div>
                 </Card>
             )}
+
+            <BatchDetailModal
+                isOpen={isDetailModalOpen}
+                onClose={() => setIsDetailModalOpen(false)}
+                productInfo={productInfo}
+            />
         </div>
     );
 }

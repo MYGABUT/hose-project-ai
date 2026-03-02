@@ -8,9 +8,11 @@ import './HoseDataForm.css';
 const BRANDS = [
     'EATON', 'YOKOHAMA', 'PARKER', 'MANULI', 'GATES', 'OLWEG',
     'BRIDGESTONE', 'CENTAUR', 'CONTITECH', 'DUNLOP', 'FLEXTRAL',
-    'GOODYEAR', 'HANSA-FLEX', 'HYDROWORKS', 'INTERPUMP', 'KOBELCO',
-    'KURIYAMA', 'MOELLER', 'RYCO', 'SEMPERIT', 'ALFAGOMMA', 'AEROQUIP'
+    'KURIYAMA', 'MOELLER', 'RYCO', 'SEMPERIT', 'ALFAGOMMA', 'AEROQUIP', 'HYDRAULINK'
 ];
+
+// Product Categories
+const CATEGORIES = ['Hose', 'Fitting', 'Adaptor', 'Ferrule', 'Valve', 'Coupling', 'Lainnya'];
 
 // Standard types
 const STANDARDS = ['R1', 'R2', 'R12', 'R13', 'R15', '1SN', '2SN', '4SP', '4SH'];
@@ -24,6 +26,11 @@ const DN_SIZES = ['DN6', 'DN8', 'DN10', 'DN12', 'DN16', 'DN19', 'DN25', 'DN32', 
 // Wire types
 const WIRE_TYPES = ['1 Wire Braid', '2 Wire Braid', '4 Wire Spiral', '6 Wire Spiral'];
 
+// Dynamic Component Options
+const THREAD_TYPES = ['JIC 37°', 'BSPP', 'BSPT', 'NPT', 'ORFS', 'Metric', 'SAE ORB', 'JIS'];
+const SEAL_TYPES = ['O-Ring', 'Tapered', 'Flat Face', 'Metal to Metal', 'Bonded Seal'];
+const CONFIGURATIONS = ['Straight (Lurus)', '45° Elbow', '90° Elbow', 'Tee', 'Cross', 'Plug/Cap'];
+
 export default function HoseDataForm({
     isOpen,
     onClose,
@@ -33,6 +40,7 @@ export default function HoseDataForm({
 }) {
     const [formData, setFormData] = useState({
         // Basic Info
+        category: 'Hose',
         brand: '',
         tipeHose: '',
         standard: '',
@@ -54,7 +62,15 @@ export default function HoseDataForm({
         bendRadiusMm: '',
         wireType: '',
 
+        // Dynamic Specs (Fittings, Adaptors etc)
+        threadType: '',
+        threadSize: '',
+        sealType: '',
+        configuration: '',
+
         // Quantity
+        isCutPiece: false,
+        cutLengthCm: '',
         lengthMeter: '',
         quantity: '1',
 
@@ -87,6 +103,7 @@ export default function HoseDataForm({
         if (isOpen && aiDetectionData && mode === 'ai') {
             setFormData(prev => ({
                 ...prev,
+                category: mode === 'ai' ? 'Hose' : prev.category,
                 brand: aiDetectionData.brand || '',
                 tipeHose: aiDetectionData.sku || aiDetectionData.STD || '',
                 standard: aiDetectionData.STD || '',
@@ -122,9 +139,24 @@ export default function HoseDataForm({
         const newErrors = {};
 
         if (!formData.brand) newErrors.brand = 'Brand wajib diisi';
-        if (!formData.standard && !formData.tipeHose) newErrors.standard = 'Standard/Tipe wajib diisi';
-        if (!formData.sizeInch && !formData.sizeDN) newErrors.sizeInch = 'Ukuran wajib diisi';
-        if (!formData.lengthMeter) newErrors.lengthMeter = 'Panjang (meter) wajib diisi';
+        if (formData.category === 'Hose') {
+            if (!formData.standard && !formData.tipeHose) newErrors.standard = 'Standard/Tipe wajib diisi';
+            if (formData.isCutPiece) {
+                if (!formData.cutLengthCm) newErrors.cutLengthCm = 'Panjang Potongan wajib diisi';
+            } else {
+                if (!formData.lengthMeter) newErrors.lengthMeter = 'Panjang (meter) wajib diisi';
+            }
+        }
+
+        if (['Adaptor', 'Fitting', 'Coupling'].includes(formData.category)) {
+            if (!formData.tipeHose && !formData.threadType && !formData.threadSize) {
+                newErrors.tipeHose = 'Tipe / Part Number atau Spek Ulir wajib diisi';
+            }
+        }
+
+        if (formData.category === 'Hose' && !formData.sizeInch && !formData.sizeDN && !formData.tipeHose) {
+            newErrors.sizeInch = 'Ukuran atau tipe wajib diisi';
+        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -175,7 +207,26 @@ export default function HoseDataForm({
                 <div className="hose-form-content">
                     {/* Section: Brand & Type */}
                     <div className="form-section">
-                        <h3>🏷️ Identitas Hose</h3>
+                        <h3>🏷️ Identitas Barang</h3>
+                        <div className="form-row">
+                            <div className="form-group full-width">
+                                <label>Kategori Barang *</label>
+                                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                                    {CATEGORIES.map(cat => (
+                                        <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                            <input
+                                                type="radio"
+                                                name="category"
+                                                value={cat}
+                                                checked={formData.category === cat}
+                                                onChange={(e) => handleChange('category', e.target.value)}
+                                            />
+                                            {cat}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                         <div className="form-row">
                             <div className="form-group">
                                 <label>
@@ -212,7 +263,7 @@ export default function HoseDataForm({
                                 {errors.brand && <span className="error-text">{errors.brand}</span>}
                             </div>
                             <div className="form-group">
-                                <label>Tipe / SKU</label>
+                                <label>Tipe / SKU / Part Number</label>
                                 <input
                                     type="text"
                                     value={formData.tipeHose}
@@ -221,42 +272,116 @@ export default function HoseDataForm({
                                 />
                             </div>
                         </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Standard *</label>
-                                <select
-                                    value={formData.standard}
-                                    onChange={(e) => handleChange('standard', e.target.value)}
-                                    className={errors.standard ? 'error' : ''}
-                                >
-                                    <option value="">-- Pilih Standard --</option>
-                                    {STANDARDS.map(s => (
-                                        <option key={s} value={s}>{s}</option>
-                                    ))}
-                                </select>
-                                {errors.standard && <span className="error-text">{errors.standard}</span>}
+                        {formData.category === 'Hose' && (
+                            <div className="form-row" style={{ marginTop: '1rem' }}>
+                                <div className="form-group full-width">
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.isCutPiece}
+                                            onChange={(e) => handleChange('isCutPiece', e.target.checked)}
+                                        />
+                                        <span>✂️ Ini adalah Hose Potongan</span>
+                                    </label>
+                                </div>
                             </div>
-                            <div className="form-group">
-                                <label>Wire Type</label>
-                                <select
-                                    value={formData.wireType}
-                                    onChange={(e) => handleChange('wireType', e.target.value)}
-                                >
-                                    <option value="">-- Pilih --</option>
-                                    {WIRE_TYPES.map(w => (
-                                        <option key={w} value={w}>{w}</option>
-                                    ))}
-                                </select>
+                        )}
+                        {formData.category === 'Hose' && (
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Standard *</label>
+                                    <select
+                                        value={formData.standard}
+                                        onChange={(e) => handleChange('standard', e.target.value)}
+                                        className={errors.standard ? 'error' : ''}
+                                    >
+                                        <option value="">-- Pilih Standard --</option>
+                                        {STANDARDS.map(s => (
+                                            <option key={s} value={s}>{s}</option>
+                                        ))}
+                                    </select>
+                                    {errors.standard && <span className="error-text">{errors.standard}</span>}
+                                </div>
+                                <div className="form-group">
+                                    <label>Wire Type</label>
+                                    <select
+                                        value={formData.wireType}
+                                        onChange={(e) => handleChange('wireType', e.target.value)}
+                                    >
+                                        <option value="">-- Pilih --</option>
+                                        {WIRE_TYPES.map(w => (
+                                            <option key={w} value={w}>{w}</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
-                    {/* Section: Size */}
+                    {/* Section: Size & Configuration */}
                     <div className="form-section">
-                        <h3>📏 Ukuran</h3>
+                        <h3>{['Adaptor', 'Fitting', 'Coupling', 'Ferrule', 'Valve'].includes(formData.category) ? '⚙️ Spesifikasi & Ulir' : '📏 Ukuran'}</h3>
+
+                        {/* If NOT Hose, show Thread / Seal / Configs */}
+                        {['Adaptor', 'Fitting', 'Coupling', 'Ferrule', 'Valve'].includes(formData.category) && (
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Tipe Ulir (Thread Type)</label>
+                                    <select
+                                        value={formData.threadType}
+                                        onChange={(e) => handleChange('threadType', e.target.value)}
+                                        className={errors.threadType ? 'error' : ''}
+                                    >
+                                        <option value="">-- Pilih --</option>
+                                        {THREAD_TYPES.map(t => (
+                                            <option key={t} value={t}>{t}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Ukuran Ulir (e.g. 1/4", M12x1.5)</label>
+                                    <input
+                                        type="text"
+                                        value={formData.threadSize}
+                                        onChange={(e) => handleChange('threadSize', e.target.value)}
+                                        placeholder={`e.g. 1/4", M12x1.5`}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {['Adaptor', 'Fitting', 'Coupling', 'Valve'].includes(formData.category) && (
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Konfigurasi Bentuk</label>
+                                    <select
+                                        value={formData.configuration}
+                                        onChange={(e) => handleChange('configuration', e.target.value)}
+                                    >
+                                        <option value="">-- Pilih --</option>
+                                        {CONFIGURATIONS.map(c => (
+                                            <option key={c} value={c}>{c}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Tipe Seal</label>
+                                    <select
+                                        value={formData.sealType}
+                                        onChange={(e) => handleChange('sealType', e.target.value)}
+                                    >
+                                        <option value="">-- Pilih --</option>
+                                        {SEAL_TYPES.map(s => (
+                                            <option key={s} value={s}>{s}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Size (Inch) *</label>
+                                <label>Size (Inch) {formData.category === 'Hose' ? '*' : ''}</label>
                                 <select
                                     value={formData.sizeInch}
                                     onChange={(e) => handleChange('sizeInch', e.target.value)}
@@ -282,90 +407,97 @@ export default function HoseDataForm({
                                 </select>
                             </div>
                         </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Hose O.D. (mm)</label>
-                                <input
-                                    type="number"
-                                    value={formData.hoseODmm}
-                                    onChange={(e) => handleChange('hoseODmm', e.target.value)}
-                                    placeholder="Outer Diameter"
-                                />
+                        {formData.category === 'Hose' && (
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Hose O.D. (mm)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.hoseODmm}
+                                        onChange={(e) => handleChange('hoseODmm', e.target.value)}
+                                        placeholder="Outer Diameter"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Hose I.D. (mm)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.hoseIDmm}
+                                        onChange={(e) => handleChange('hoseIDmm', e.target.value)}
+                                        placeholder="Inner Diameter"
+                                    />
+                                </div>
                             </div>
-                            <div className="form-group">
-                                <label>Hose I.D. (mm)</label>
-                                <input
-                                    type="number"
-                                    value={formData.hoseIDmm}
-                                    onChange={(e) => handleChange('hoseIDmm', e.target.value)}
-                                    placeholder="Inner Diameter"
-                                />
-                            </div>
-                        </div>
+                        )}
                     </div>
 
                     {/* Section: Pressure */}
-                    <div className="form-section">
-                        <h3>💪 Tekanan</h3>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Working Pressure (Bar)</label>
-                                <input
-                                    type="number"
-                                    value={formData.workingPressureBar}
-                                    onChange={(e) => handleChange('workingPressureBar', e.target.value)}
-                                    placeholder="e.g. 280"
-                                />
+                    {formData.category === 'Hose' && (
+                        <div className="form-section">
+                            <h3>💪 Tekanan</h3>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Working Pressure (Bar)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.workingPressureBar}
+                                        onChange={(e) => handleChange('workingPressureBar', e.target.value)}
+                                        placeholder="e.g. 280"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Working Pressure (PSI)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.workingPressurePsi}
+                                        onChange={(e) => handleChange('workingPressurePsi', e.target.value)}
+                                        placeholder="e.g. 4000"
+                                    />
+                                </div>
                             </div>
-                            <div className="form-group">
-                                <label>Working Pressure (PSI)</label>
-                                <input
-                                    type="number"
-                                    value={formData.workingPressurePsi}
-                                    onChange={(e) => handleChange('workingPressurePsi', e.target.value)}
-                                    placeholder="e.g. 4000"
-                                />
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Burst Pressure (Bar)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.burstPressureBar}
+                                        onChange={(e) => handleChange('burstPressureBar', e.target.value)}
+                                        placeholder="Min Burst"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Bend Radius (mm)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.bendRadiusMm}
+                                        onChange={(e) => handleChange('bendRadiusMm', e.target.value)}
+                                        placeholder="e.g. 180"
+                                    />
+                                </div>
                             </div>
                         </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Burst Pressure (Bar)</label>
-                                <input
-                                    type="number"
-                                    value={formData.burstPressureBar}
-                                    onChange={(e) => handleChange('burstPressureBar', e.target.value)}
-                                    placeholder="Min Burst"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Bend Radius (mm)</label>
-                                <input
-                                    type="number"
-                                    value={formData.bendRadiusMm}
-                                    onChange={(e) => handleChange('bendRadiusMm', e.target.value)}
-                                    placeholder="e.g. 180"
-                                />
-                            </div>
-                        </div>
-                    </div>
+                    )}
 
                     {/* Section: Quantity & Location */}
                     <div className="form-section">
                         <h3>📦 Kuantitas & Lokasi</h3>
                         <div className="form-row">
+                            {formData.category === 'Hose' && (
+                                <div className="form-group">
+                                    <label>{formData.isCutPiece ? 'Panjang Potongan (Cm/Meter) *' : 'Panjang (Meter) *'}</label>
+                                    <input
+                                        type="number"
+                                        value={formData.isCutPiece ? formData.cutLengthCm : formData.lengthMeter}
+                                        onChange={(e) => handleChange(formData.isCutPiece ? 'cutLengthCm' : 'lengthMeter', e.target.value)}
+                                        placeholder={formData.isCutPiece ? "e.g. 150 cm" : "e.g. 50"}
+                                        className={(formData.isCutPiece ? errors.cutLengthCm : errors.lengthMeter) ? 'error' : ''}
+                                    />
+                                    {errors.lengthMeter && !formData.isCutPiece && <span className="error-text">{errors.lengthMeter}</span>}
+                                    {errors.cutLengthCm && formData.isCutPiece && <span className="error-text">{errors.cutLengthCm}</span>}
+                                </div>
+                            )}
                             <div className="form-group">
-                                <label>Panjang (Meter) *</label>
-                                <input
-                                    type="number"
-                                    value={formData.lengthMeter}
-                                    onChange={(e) => handleChange('lengthMeter', e.target.value)}
-                                    placeholder="e.g. 50"
-                                    className={errors.lengthMeter ? 'error' : ''}
-                                />
-                                {errors.lengthMeter && <span className="error-text">{errors.lengthMeter}</span>}
-                            </div>
-                            <div className="form-group">
-                                <label>Jumlah Roll</label>
+                                <label>{formData.category === 'Hose' ? (formData.isCutPiece ? 'Jumlah Potongan' : 'Jumlah Roll') : 'Jumlah Item (Pcs) *'}</label>
                                 <input
                                     type="number"
                                     value={formData.quantity}

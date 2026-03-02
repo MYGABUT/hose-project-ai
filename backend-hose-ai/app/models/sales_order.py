@@ -46,7 +46,6 @@ class SalesOrder(Base):
     subtotal = Column(Numeric(15, 2), default=0)
     discount = Column(Numeric(15, 2), default=0)
     tax = Column(Numeric(15, 2), default=0)
-    tax = Column(Numeric(15, 2), default=0)
     total = Column(Numeric(15, 2), default=0)
     
     # Down Payment (Phase 9)

@@ -387,3 +387,60 @@ def convert_to_po(
             "po": po.to_dict()
         }
     }
+
+
+@router.post("/{pr_id}/cancel-po")
+def cancel_purchase_order(
+    pr_id: int,
+    reason: str = Query("Cancelled from Berita Acara"),
+    cancelled_by: str = Query("Admin"),
+    db: Session = Depends(get_db)
+):
+    """
+    ❌ Cancel PO from Berita Acara (Receiving Report)
+    
+    Cancels PO and reverses supplier outstanding.
+    Only allowed for ORDERED / PARTIAL status.
+    """
+    pr = db.query(PurchaseRequest).filter(
+        PurchaseRequest.id == pr_id,
+        PurchaseRequest.is_deleted == False
+    ).first()
+    
+    if not pr:
+        raise HTTPException(status_code=404, detail="PR tidak ditemukan")
+    
+    if not pr.po_id:
+        raise HTTPException(status_code=400, detail="PR belum memiliki PO")
+    
+    po = db.query(PurchaseOrder).filter(PurchaseOrder.id == pr.po_id).first()
+    if not po:
+        raise HTTPException(status_code=404, detail="PO tidak ditemukan")
+    
+    if po.status not in ['ORDERED', 'PARTIAL']:
+        raise HTTPException(status_code=400, detail=f"PO status {po.status}, tidak bisa cancel. Hanya ORDERED/PARTIAL.")
+    
+    # Cancel PO
+    po.status = 'CANCELLED'
+    po.notes = (po.notes or '') + f"\n❌ Cancelled by {cancelled_by}: {reason}"
+    
+    # Reverse supplier outstanding
+    if po.supplier_id:
+        supplier = db.query(Supplier).filter(Supplier.id == po.supplier_id).first()
+        if supplier:
+            supplier.total_outstanding = max(0, Decimal(float(supplier.total_outstanding or 0) - float(po.total or 0)))
+    
+    # Update PR status
+    pr.status = 'CANCELLED'
+    pr.notes = (pr.notes or '') + f"\n❌ PO Cancelled: {reason}"
+    
+    db.commit()
+    
+    return {
+        "status": "success",
+        "message": f"PO {po.po_number} berhasil dibatalkan",
+        "data": {
+            "pr": pr.to_dict(),
+            "po": po.to_dict()
+        }
+    }

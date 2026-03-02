@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getProducts, createProduct, updateProduct as apiUpdateProduct, getBrands } from '../services/productApi';
+import { useAuth } from './AuthContext';
 
 const ProductContext = createContext(null);
 
@@ -21,10 +22,14 @@ export function ProductProvider({ children }) {
     // Message state
     const [actionMessage, setActionMessage] = useState(null);
 
+    const { isAuthenticated } = useAuth();
+
     // Initial load
     useEffect(() => {
-        loadProducts();
-    }, []);
+        if (isAuthenticated) {
+            loadProducts();
+        }
+    }, [isAuthenticated]);
 
     const loadProducts = async () => {
         setLoading(true);

@@ -338,6 +338,14 @@ def convert_loan_to_invoice(
         loan.status = 'PARTIAL'
         
     db.commit()
+    
+    # 🔗 INTEGRATION: Update sales intelligence (consignment sale = active customer)
+    try:
+        from app.services.integration import on_loan_converted_to_invoice
+        on_loan_converted_to_invoice(db, loan_id, inv_number)
+    except Exception:
+        pass
+    
     return {"status": "success", "message": f"Invoice {inv_number} created"}
 
 

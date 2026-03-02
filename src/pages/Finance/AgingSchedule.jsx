@@ -7,7 +7,7 @@ import Card from '../../components/common/Card/Card';
 import Button from '../../components/common/Button/Button';
 import './Finance.css';
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_AI_API_URL || "";
 
 export default function AgingSchedule() {
     const [loading, setLoading] = useState(true);

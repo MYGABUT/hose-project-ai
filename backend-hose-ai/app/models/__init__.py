@@ -33,6 +33,7 @@ from app.models.journal import JournalEntry, JournalLine
 from app.models.audit_log import AuditLog, create_audit_log
 from app.models.period_lock import PeriodLock, is_period_locked, check_transaction_allowed
 from app.models.fixed_asset import FixedAsset, DepreciationEntry
+from app.models.company import Company
 from app.models.warehouse_transfer import WarehouseTransfer, TransferItem
 from app.models.giro import Giro
 from app.models.salesman import Salesman, SalesCommission
@@ -45,6 +46,8 @@ from app.models.product_component import ProductComponent
 from app.models.product_substitute import ProductSubstitute
 from app.models.project import Project, WorkOrder, SPPD, DailyReport, Commissioning
 from app.models.customer_asset import CustomerAsset, AssetComponent, AssetHMLog
+from app.models.invoice_inbox import InvoiceInbox
+from app.models.crm import CRMLead, LeadStatus
 
 __all__ = [
     # Enums
@@ -118,5 +121,9 @@ __all__ = [
     "Commissioning",
     "CustomerAsset",
     "AssetComponent",
+    "AssetComponent",
     "AssetHMLog",
+    "InvoiceInbox",
+    "CRMLead",
+    "LeadStatus",
 ]

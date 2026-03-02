@@ -8,7 +8,7 @@ import Card from '../../components/common/Card/Card';
 import Button from '../../components/common/Button/Button';
 import './RackMap.css';
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_AI_API_URL || "";
 
 const COLOR_MAP = {
     empty: { bg: '#f3f4f6', border: '#d1d5db', label: 'Kosong' },

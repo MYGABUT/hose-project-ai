@@ -52,7 +52,7 @@ export const getApproversFor = (userId) => {
 const AccessRequestContext = createContext(null);
 
 export function AccessRequestProvider({ children }) {
-    const { user } = useAuth();
+    const { user, isAuthenticated } = useAuth();
 
     // Pending requests (waiting for approval)
     const [pendingRequests, setPendingRequests] = useState([]);
@@ -111,8 +111,10 @@ export function AccessRequestProvider({ children }) {
         }
 
         // Load approvers from API
-        loadApprovers();
-    }, []);
+        if (isAuthenticated) {
+            loadApprovers();
+        }
+    }, [isAuthenticated]);
 
     const loadApprovers = async () => {
         try {

@@ -248,27 +248,7 @@ export default function Login() {
                     <span className="device-id">{deviceId || 'Loading...'}</span>
                 </div>
 
-                {/* Demo Credentials */}
-                <div className="demo-hint">
-                    <p>🔐 <strong>Demo Credentials:</strong></p>
-                    <div className="credential-hints">
-                        <div className="credential">
-                            <span className="role">Admin:</span>
-                            <span className="email">admin@hosepro.id</span>
-                            <span className="pass">admin123</span>
-                        </div>
-                        <div className="credential">
-                            <span className="role">Manager:</span>
-                            <span className="email">budi@hosepro.id</span>
-                            <span className="pass">budi123</span>
-                        </div>
-                        <div className="credential">
-                            <span className="role">Sales:</span>
-                            <span className="email">siti@hosepro.id</span>
-                            <span className="pass">siti123</span>
-                        </div>
-                    </div>
-                </div>
+
             </div>
         </div>
     );

@@ -10,7 +10,7 @@ import StatusBadge from '../../components/common/Badge/StatusBadge';
 import Modal from '../../components/common/Modal/Modal';
 import './Inventory.css';
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_AI_API_URL || "";
 
 // ============ Excel-Style Combo Input Component ============
 function ComboInput({
@@ -511,6 +511,11 @@ export default function Inventory() {
                                                 <div className="roll-location">
                                                     📍 {roll.location_code || '-'}
                                                 </div>
+                                                {roll.owner_name && (
+                                                    <div className="roll-owner" style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>
+                                                        🏢 {roll.owner_name}
+                                                    </div>
+                                                )}
                                                 <div className="roll-meter">
                                                     <div className="meter-header">
                                                         <span>Sisa</span>
@@ -564,6 +569,11 @@ export default function Inventory() {
                                                 <div className="remnant-meta">
                                                     📍 {remnant.location_code}
                                                 </div>
+                                                {remnant.owner_name && (
+                                                    <div className="remnant-meta" style={{ color: '#666' }}>
+                                                        🏢 {remnant.owner_name}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="remnant-length">
                                                 <span className="length-value">{remnant.current_qty}m</span>

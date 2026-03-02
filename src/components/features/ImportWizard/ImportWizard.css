@@ -1,0 +1,112 @@
+.import-wizard {
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.wizard-step-content {
+    margin-top: 24px;
+    margin-bottom: 24px;
+    min-height: 200px;
+}
+
+/* Step 1: Upload */
+.upload-zone {
+    border: 2px dashed #e0e0e0;
+    border-radius: 12px;
+    padding: 40px;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: pointer;
+    background: #fafafa;
+}
+
+.upload-zone:hover,
+.upload-zone.active {
+    border-color: #2196f3;
+    background: #e3f2fd;
+}
+
+.upload-icon {
+    font-size: 48px;
+    color: #9e9e9e;
+    margin-bottom: 16px;
+}
+
+.file-info {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: #e8f5e9;
+    padding: 8px 16px;
+    border-radius: 20px;
+    color: #2e7d32;
+    font-weight: 500;
+}
+
+/* Step 2: Preview */
+.preview-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: #f5f5f5;
+    padding: 12px 20px;
+    border-radius: 8px;
+    flex: 1;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.preview-table-container {
+    max-height: 300px;
+    overflow: auto;
+    border: 1px solid #eee;
+    border-radius: 8px;
+}
+
+/* Step 3: Result */
+.result-container {
+    text-align: center;
+    padding: 40px;
+}
+
+.result-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+}
+
+.result-success {
+    color: #4caf50;
+}
+
+.result-error {
+    color: #f44336;
+}
+
+.error-list {
+    margin-top: 20px;
+    text-align: left;
+    background: #ffebee;
+    padding: 16px;
+    border-radius: 8px;
+    max-height: 200px;
+    overflow: auto;
+}

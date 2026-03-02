@@ -4,7 +4,7 @@ Operational metrics and dashboard statistics
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func as sqlfunc, desc, and_, or_
+from sqlalchemy import func as sqlfunc, desc, and_, or_, cast, String
 from datetime import datetime, date, timedelta
 from typing import List, Dict, Any
 
@@ -22,7 +22,20 @@ from app.models import (
     ProductCategory
 )
 
-router = APIRouter(prefix="/analytics", tags=["Analytics"])
+from app.core.security import get_current_user
+from app.models.user import User
+
+router = APIRouter(
+    prefix="/analytics", 
+    tags=["Analytics"],
+    dependencies=[Depends(get_current_user)]
+)
+
+def get_enum_value(enum_obj):
+    """Safely get value from potential Enum object or return string"""
+    if hasattr(enum_obj, 'value'):
+        return enum_obj.value
+    return str(enum_obj) if enum_obj is not None else None
 
 @router.get("/summary")
 def get_summary_stats(
@@ -65,19 +78,23 @@ def get_summary_stats(
     # This is an approximation based on SOLine items
     # Ideally should come from consumed batches, but SOLine is easier for now
     usage_stats = db.query(
-        Product.category,
+        cast(Product.category, String),
         sqlfunc.sum(SOLine.qty)
-    ).join(Product).filter(
+    ).join(Product, SOLine.product_id == Product.id).filter(
         SOLine.created_at >= start_date
-    ).group_by(Product.category).all()
+    ).group_by(cast(Product.category, String)).all()
     
     hose_used = 0
     fittings_used = 0
     
     for cat, qty in usage_stats:
-        if cat == ProductCategory.HOSE:
+        # CATEGORY COMPARISON FIX
+        # Ideally compare values, not objects, to be safe
+        cat_val = get_enum_value(cat)
+        
+        if cat_val == ProductCategory.HOSE.value:
             hose_used += int(qty or 0)
-        elif cat in [ProductCategory.FITTING, ProductCategory.CONNECTOR]:
+        elif cat_val in [ProductCategory.FITTING.value, ProductCategory.CONNECTOR.value]:
             fittings_used += int(qty or 0)
 
     return {
@@ -127,11 +144,11 @@ def get_sales_trend(db: Session = Depends(get_db)):
 def get_sales_by_category(db: Session = Depends(get_db)):
     """🥧 Sales Composition by Category"""
     stats = db.query(
-        Product.category,
+        cast(Product.category, String),
         sqlfunc.sum(SOLine.line_total)
-    ).join(Product).filter(
+    ).join(Product, SOLine.product_id == Product.id).filter(
         SOLine.created_at >= date.today() - timedelta(days=30) # Last 30 days
-    ).group_by(Product.category).all()
+    ).group_by(cast(Product.category, String)).all()
     
     total_revenue = sum(float(s[1] or 0) for s in stats)
     
@@ -140,7 +157,7 @@ def get_sales_by_category(db: Session = Depends(get_db)):
         rev = float(revenue or 0)
         pct = round((rev / total_revenue * 100), 1) if total_revenue > 0 else 0
         result.append({
-            "category": cat.value,
+            "category": get_enum_value(cat),
             "value": rev,
             "percentage": pct
         })
@@ -156,11 +173,11 @@ def get_top_selling(db: Session = Depends(get_db)):
     stats = db.query(
         Product.sku,
         Product.name,
-        Product.unit,
+        cast(Product.unit, String),
         sqlfunc.sum(SOLine.qty).label('total_qty'),
         sqlfunc.sum(SOLine.line_total).label('total_revenue')
-    ).join(Product).group_by(
-        Product.id
+    ).join(Product, SOLine.product_id == Product.id).group_by(
+        Product.id, Product.unit
     ).order_by(desc('total_revenue')).limit(10).all()
     
     result = []
@@ -169,7 +186,7 @@ def get_top_selling(db: Session = Depends(get_db)):
             "rank": i,
             "sku": sku,
             "name": name,
-            "unit": unit.value,
+            "unit": get_enum_value(unit),
             "qty": int(qty or 0),
             "revenue": float(rev or 0)
         })
@@ -192,7 +209,18 @@ def get_dead_stock(db: Session = Depends(get_db)):
     
     # 1. Get batches with movements
     # This is heavy, optimization: Filter batches created < cutoff first
-    candidates = db.query(InventoryBatch).join(Product).filter(
+    # 1. Get batches with movements
+    # This is heavy, optimization: Filter batches created < cutoff first
+    # Safe query
+    candidates = db.query(
+        InventoryBatch.id,
+        InventoryBatch.current_qty,
+        InventoryBatch.received_date,
+        InventoryBatch.cost_price,
+        Product.sku,
+        Product.name,
+        cast(Product.unit, String).label('unit_str')
+    ).join(Product, InventoryBatch.product_id == Product.id).filter(
         InventoryBatch.current_qty > 0,
         InventoryBatch.received_date <= cutoff
     ).limit(100).all() # Limit for performance sanity
@@ -214,10 +242,10 @@ def get_dead_stock(db: Session = Depends(get_db)):
              value = float(b.current_qty) * (float(b.cost_price or 0) or 100000)
              
              result.append({
-                "sku": b.product.sku,
-                "name": b.product.name,
+                "sku": b.sku,
+                "name": b.name,
                 "stock": float(b.current_qty),
-                "unit": b.product.unit.value if b.product.unit else "PCS",
+                "unit": b.unit_str or "PCS",
                 "lastMoved": last_activity.date().isoformat(),
                 "daysIdle": days_idle,
                 "value": value
@@ -259,7 +287,13 @@ def get_restock_prediction(
     alerts = []
     
     for prod_id, total_used in usage_stats:
-        product = db.query(Product).get(prod_id)
+        # Safe query
+        product = db.query(
+            Product.sku,
+            Product.name,
+            cast(Product.unit, String).label('unit_str')
+        ).filter(Product.id == prod_id).first()
+        
         if not product:
             continue
             
@@ -289,7 +323,7 @@ def get_restock_prediction(
                 "current_stock": float(current_stock),
                 "adu": round(adu, 2), # Daily usage
                 "days_left": round(dos, 1),
-                "suggestion": f"Order {round(adu * 30)} {product.unit.value} (for 30 days)"
+                "suggestion": f"Order {round(adu * 30)} {product.unit_str or 'PCS'} (for 30 days)"
             })
             
     return {
@@ -387,7 +421,7 @@ def get_active_jobs(db: Session = Depends(get_db)):
             "id": job.jo_number,
             "client": client_name,
             "progress": progress,
-            "status": job.status.value.lower()
+            "status": get_enum_value(job.status).lower() if job.status else "unknown"
         })
         
     return {
@@ -403,7 +437,13 @@ def get_low_stock(db: Session = Depends(get_db)):
     # Or simpler: Product table should ideally translate current stock.
     # We will compute on fly for now.
     
-    products = db.query(Product).filter(Product.min_stock > 0).all()
+    # Safe query to avoid Enum crash
+    products = db.query(
+        Product.id,
+        Product.name,
+        Product.min_stock,
+        cast(Product.unit, String).label('unit_str')
+    ).filter(Product.min_stock > 0).all()
     
     alerts = []
     for p in products:
@@ -418,7 +458,7 @@ def get_low_stock(db: Session = Depends(get_db)):
                 "name": p.name,
                 "current": float(total_qty),
                 "minimum": p.min_stock,
-                "unit": p.unit.value if p.unit else "unit"
+                "unit": p.unit_str or "PCS"
             })
             
     return {

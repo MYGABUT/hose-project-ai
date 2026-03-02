@@ -6,7 +6,7 @@ import Input from '../../components/common/Input/Input';
 import Button from '../../components/common/Button/Button';
 import './InstantAssembly.css';
 
-const API_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_AI_API_URL || "";
 
 export default function InstantAssembly() {
     const navigate = useNavigate();

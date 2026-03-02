@@ -1,11 +1,12 @@
 
 import { useState, useEffect } from 'react';
+import { api } from '../../services/api';
 import Card from '../../components/common/Card/Card';
 import Input from '../../components/common/Input/Input';
 import Button from '../../components/common/Button/Button';
 import './InventoryControlTower.css';
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_AI_API_URL || "";
 
 export default function InventoryControlTower() {
     const [loading, setLoading] = useState(false);
@@ -50,6 +51,23 @@ export default function InventoryControlTower() {
         if (e.key === 'Enter') loadData();
     };
 
+    const handleSync = async () => {
+        const sheetId = window.prompt("Masukkan Google Sheet ID target (Pastikan service account sudah diinvite):");
+        if (!sheetId) return;
+
+        if (!window.confirm("Yakin ingin overwrite data di Google Sheet?")) return;
+
+        setLoading(true);
+        try {
+            const res = await api.post('/sync/push/inventory', { sheet_id: sheetId });
+            alert(`Sukses! ${res.data.message}`);
+        } catch (err) {
+            alert(`Gagal: ${err.message || 'Error sync'}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="control-tower-page">
             <div className="page-header">
@@ -59,6 +77,7 @@ export default function InventoryControlTower() {
                 </div>
                 <div className="header-actions">
                     <Button variant="secondary" onClick={loadData}>🔄 Refresh</Button>
+                    <Button variant="primary" onClick={handleSync}>☁️ Sync to Sheet</Button>
                 </div>
             </div>
 

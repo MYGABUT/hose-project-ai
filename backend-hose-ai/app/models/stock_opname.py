@@ -12,12 +12,15 @@ class OpnameStatus(str, enum.Enum):
     OPEN = "OPEN"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
+    IN_PROGRESS = "IN_PROGRESS" # Legacy support
 
 class OpnameItemStatus(str, enum.Enum):
-    PENDING = "pending"
-    FOUND = "found"
-    MISSING = "missing"
-    MISMATCH = "mismatch" # Qty diff
+    PENDING = "PENDING"
+    FOUND = "FOUND"
+    MISSING = "MISSING"
+    MISMATCH = "MISMATCH"
+    COUNTED = "COUNTED"
+    IN_PROGRESS = "IN_PROGRESS"
 
 class OpnameScopeType(str, enum.Enum):
     ALL = "ALL"
@@ -33,9 +36,12 @@ class StockOpname(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     
+    # Legacy / Required Fields
+    opname_number = Column(String(50), unique=True, nullable=False) # Added for legacy compatibility
+    
     # Session Info
     description = Column(String(200), nullable=False) # e.g. "Monthly Audit Jan 25"
-    status = Column(Enum(OpnameStatus), default=OpnameStatus.OPEN, nullable=False)
+    status = Column(Enum(OpnameStatus, values_callable=lambda x: [e.value for e in x]), default=OpnameStatus.OPEN, nullable=False)
     
     # Stats (Snapshots)
     total_items = Column(Integer, default=0)
@@ -46,6 +52,7 @@ class StockOpname(Base):
     # Scope (Dynamic Opname)
     scope_type = Column(String(20), default="ALL") # ALL, LOCATION, CATEGORY
     scope_value = Column(String(100), nullable=True) # e.g. "RAK-A", "HOSE-HYDRAULIC"
+    is_blind = Column(Boolean, default=False) # Hide system qty from counters
 
     # Audit
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -58,6 +65,7 @@ class StockOpname(Base):
     def to_dict(self):
         return {
             "id": self.id,
+            "opname_number": self.opname_number,
             "description": self.description,
             "status": self.status.value,
             "total_items": self.total_items,
@@ -66,6 +74,7 @@ class StockOpname(Base):
             "missing_count": self.missing_count,
             "scope_type": self.scope_type,
             "scope_value": self.scope_value,
+            "is_blind": self.is_blind,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
             "created_by": self.created_by,
@@ -88,6 +97,7 @@ class OpnameItem(Base):
     system_qty = Column(Float, nullable=False)
     
     # Audit Data
+    actual_qty = Column(Float, nullable=True) # Counted quantity
     status = Column(Enum(OpnameItemStatus), default=OpnameItemStatus.PENDING)
     scanned_at = Column(DateTime(timezone=True))
     
@@ -102,6 +112,7 @@ class OpnameItem(Base):
             "batch_id": self.batch_id,
             "barcode": self.batch.barcode if self.batch else "Unknown",
             "system_qty": self.system_qty,
+            "actual_qty": self.actual_qty,
             "status": self.status.value,
             "scanned_at": self.scanned_at.isoformat() if self.scanned_at else None,
             

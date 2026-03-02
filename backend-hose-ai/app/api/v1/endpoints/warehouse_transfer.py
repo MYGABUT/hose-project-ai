@@ -14,8 +14,10 @@ from app.core.database import get_db
 from app.models import (
     WarehouseTransfer, TransferItem, InventoryBatch, 
     StorageLocation, Product, BatchMovement, MovementType,
-    BatchStatus
+    BatchStatus, Company
 )
+from sqlalchemy import or_
+from app.core.deps import get_current_company
 
 
 router = APIRouter(prefix="/transfers", tags=["Warehouse Transfer"])
@@ -33,10 +35,22 @@ class TransferRequest(BaseModel):
     items: List[TransferItemRequest]
     notes: Optional[str] = None
     requested_by: str
+    transfer_type: Optional[str] = 'INTERNAL' # INTERNAL, CONSIGNMENT_OUT, CONSIGNMENT_RETURN
+
+class TransferPickItem(BaseModel):
+    product_id: int
+    batch_id: int
+    qty: float
 
 class TransferReceive(BaseModel):
     received_by: str
     items_received: Optional[List[dict]] = None # Optional for Auto-Receive
+
+class TransferShip(BaseModel):
+    shipped_by: str
+    tracking_number: Optional[str] = None
+    notes: Optional[str] = None
+    picked_batches: Optional[List[TransferPickItem]] = None
 
 
 # ============ Endpoints ============
@@ -52,16 +66,47 @@ def generate_transfer_number(db: Session, date_obj: date) -> str:
 
 
 @router.get("")
-def list_transfers(
+async def list_transfers(
     status: Optional[str] = None,
     limit: int = 50,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company)
 ):
     """
-    📜 List Warehouse Transfers
-    Optional filter by status (DRAFT, APPROVED, IN_TRANSIT, RECEIVED)
+    📜 List Warehouse Transfers (Scoped by Company)
     """
     query = db.query(WarehouseTransfer)
+    
+    # --- Scoping ---
+    if not current_company.is_parent:
+        # Anak sees:
+        # 1. Outbound (From my location)
+        # 2. Inbound (To my location)
+        # 3. Consignment (stock I own moving between other locations? Rare, usually involves me)
+        
+        # We need to join to check location ownership
+        # Since from_location and to_location are both StorageLocations, we need aliases (or explicit joins)
+        # But WarehouseTransfer stores IDs.
+        # Efficient way:
+        # WHERE from_location_id IN (SELECT id FROM locations WHERE company_id = X)
+        # OR to_location_id IN (SELECT id FROM locations WHERE company_id = X)
+        
+        # Or simply:
+        # We can replicate the logic:
+        # query = query.join(StorageLocation, WarehouseTransfer.from_location_id == StorageLocation.id) ...
+        # But doing OR on two joins is tricky in simple ORM.
+        
+        # Simpler approach: Sub-select IDs of my locations
+        my_location_ids = db.query(StorageLocation.id).filter(StorageLocation.company_id == current_company.id).all()
+        my_loc_ids = [loc.id for loc in my_location_ids]
+        
+        query = query.filter(
+            or_(
+                WarehouseTransfer.from_location_id.in_(my_loc_ids),
+                WarehouseTransfer.to_location_id.in_(my_loc_ids)
+            )
+        )
+    # --- End Scoping ---
     
     if status and status != 'ALL':
         query = query.filter(WarehouseTransfer.status == status)
@@ -125,8 +170,10 @@ def request_transfer(
         to_location_name=dest_loc.code,
         request_date=date.today(),
         status='DRAFT',
+
         requested_by=data.requested_by,
-        notes=data.notes
+        notes=data.notes,
+        transfer_type=data.transfer_type
     )
     db.add(transfer)
     db.flush()
@@ -215,50 +262,94 @@ def ship_transfer(
     
     for item in items:
         remaining_qty = float(item.qty_requested)
+
+        # Ensure we don't try to deduct from phantom picked batches if requested item has 0 qty
+        if remaining_qty <= 0:
+            item.qty_shipped = item.qty_requested
+            item.line_status = 'SHIPPED'
+            continue
         
-        # Get multiple batches FIFO
-        batches = db.query(InventoryBatch).filter(
-            InventoryBatch.product_id == item.product_id,
-            InventoryBatch.location_id == transfer.from_location_id,
-            InventoryBatch.status == BatchStatus.AVAILABLE,
-            InventoryBatch.current_qty > 0
-        ).order_by(InventoryBatch.received_date.asc()).all()
-        
-        for batch in batches:
-            if remaining_qty <= 0:
-                break
+        # EXPLICIT BATCH PICKING
+        if data.picked_batches:
+            # Get batches specifically picked for this product
+            product_picks = [p for p in data.picked_batches if p.product_id == item.product_id]
+            for pick in product_picks:
+                if remaining_qty <= 0:
+                    break
+                    
+                batch = db.query(InventoryBatch).filter(
+                    InventoryBatch.id == pick.batch_id,
+                    InventoryBatch.location_id == transfer.from_location_id,
+                    InventoryBatch.status == BatchStatus.AVAILABLE.value,
+                    InventoryBatch.current_qty > 0
+                ).first()
                 
-            qty_take = min(batch.current_qty, remaining_qty)
+                if not batch:
+                    db.rollback()
+                    raise HTTPException(status_code=400, detail=f"Batch {pick.batch_id} tidak valid untuk dipick atau stok kosong.")
+                
+                # Check how much we can take from this pick
+                qty_take = min(batch.current_qty, min(remaining_qty, pick.qty))
+                
+                if qty_take <= 0: 
+                    continue
+
+                batch.current_qty -= qty_take
+                remaining_qty -= qty_take
+                
+                move = BatchMovement(
+                    batch_id=batch.id,
+                    movement_type=MovementType.TRANSFER,
+                    qty=qty_take,
+                    qty_before=batch.current_qty + qty_take,
+                    qty_after=batch.current_qty,
+                    from_location_id=batch.location_id,
+                    to_location_id=None, # In Transit
+                    reference_id=transfer.id,
+                    reference_type="WAREHOUSE_TRANSFER",
+                    performed_by=data.shipped_by,
+                    notes=f"Shipped via {transfer.transfer_number}"
+                )
+                db.add(move)
+                
+                if batch.current_qty == 0:
+                    batch.status = BatchStatus.CONSUMED.value
+
+        else:
+            # FALLBACK TO FIFO
+            batches = db.query(InventoryBatch).filter(
+                InventoryBatch.product_id == item.product_id,
+                InventoryBatch.location_id == transfer.from_location_id,
+                InventoryBatch.status == BatchStatus.AVAILABLE.value,
+                InventoryBatch.current_qty > 0
+            ).order_by(InventoryBatch.received_date.asc()).all()
             
-            # Log Movement (OUTBOUND TRANSFER)
-            # Create a "Phantom" or "In-Transit" batch logic later?
-            # For now, we deduct source and treat as "in flight" attached to the TransferItem
-            
-            batch.current_qty -= qty_take
-            remaining_qty -= qty_take
-            
-            # Record what exact batch was used? 
-            # Ideally TransferItem should split if multiple batches used.
-            # Simplified: We just note it's shipped.
-            
-            # Log Movement
-            move = BatchMovement(
-                batch_id=batch.id,
-                movement_type=MovementType.TRANSFER,
-                qty=qty_take,
-                qty_before=batch.current_qty + qty_take,
-                qty_after=batch.current_qty,
-                from_location_id=batch.location_id,
-                to_location_id=None, # In Transit
-                reference_id=transfer.id,
-                reference_type="WAREHOUSE_TRANSFER",
-                performed_by=data.shipped_by,
-                notes=f"Shipped via {transfer.transfer_number}"
-            )
-            db.add(move)
-            
-            if batch.current_qty == 0:
-                batch.status = BatchStatus.CONSUMED
+            for batch in batches:
+                if remaining_qty <= 0:
+                    break
+                    
+                qty_take = min(batch.current_qty, remaining_qty)
+                
+                batch.current_qty -= qty_take
+                remaining_qty -= qty_take
+                
+                move = BatchMovement(
+                    batch_id=batch.id,
+                    movement_type=MovementType.TRANSFER,
+                    qty=qty_take,
+                    qty_before=batch.current_qty + qty_take,
+                    qty_after=batch.current_qty,
+                    from_location_id=batch.location_id,
+                    to_location_id=None, # In Transit
+                    reference_id=transfer.id,
+                    reference_type="WAREHOUSE_TRANSFER",
+                    performed_by=data.shipped_by,
+                    notes=f"Shipped via {transfer.transfer_number}"
+                )
+                db.add(move)
+                
+                if batch.current_qty == 0:
+                    batch.status = BatchStatus.CONSUMED.value
         
         if remaining_qty > 0:
             db.rollback()
@@ -305,6 +396,20 @@ def receive_transfer(
                 "qty_received": float(t_item.qty_shipped) # Assume full receipt
             })
     
+    # Determine Owner based on Transfer Type
+    src_loc = db.query(StorageLocation).get(transfer.from_location_id)
+    dest_loc = db.query(StorageLocation).get(transfer.to_location_id)
+    
+    # Default: Owner follows the location (Internal Transfer)
+    new_owner_id = dest_loc.company_id if dest_loc else None
+    
+    if transfer.transfer_type == 'CONSIGNMENT_OUT':
+        # Titip Barang: Owner remains the Sender (Source Company)
+        new_owner_id = src_loc.company_id if src_loc else None
+    elif transfer.transfer_type == 'CONSIGNMENT_RETURN':
+        # Tarik Barang: Owner becomes the Receiver (Me)
+        new_owner_id = dest_loc.company_id
+    
     for r_item in items_to_process:
         item_id = r_item.get("id")
         qty_received = float(r_item.get("qty_received", 0))
@@ -318,6 +423,7 @@ def receive_transfer(
         new_batch = InventoryBatch(
             product_id=t_item.product_id,
             location_id=transfer.to_location_id,
+            owner_id=new_owner_id, # Link Owner
             batch_number=t_item.batch_number or f"TRFx{transfer.transfer_number}",
             barcode=f"{t_item.product_sku}-{datetime.now().timestamp()}", # Generate new barcode
             initial_qty=qty_received,

@@ -4,19 +4,19 @@ PostgreSQL Database Configuration
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
+from app.core.config import settings
 
 # PostgreSQL Connection
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:postgress@localhost:5432/hose_pro_db"
-)
+DATABASE_URL = settings.DATABASE_URL
 
 # Create engine with client encoding
 engine = create_engine(
     DATABASE_URL, 
     pool_pre_ping=True,
-    connect_args={"client_encoding": "utf8"}
+    connect_args={
+        "client_encoding": "utf8",
+        "options": "-c client_encoding=utf8"
+    }
 )
 
 # Session factory
@@ -68,7 +68,8 @@ def init_db():
         job_order,
         stock_booking,
         product_loan,
-        rma
+        rma,
+        crm
     )
     Base.metadata.create_all(bind=engine)
     print("[SUCCESS] PostgreSQL database tables created!")

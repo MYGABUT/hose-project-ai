@@ -3,7 +3,7 @@ import Modal from '../../common/Modal/Modal';
 import Button from '../../common/Button/Button';
 import { getUsers } from '../../../services/userApi';
 import { getProducts } from '../../../services/productApi';
-import { getAvailableBatches } from '../../../services/inventoryApi';
+import { getAvailableBatches } from '../../../services/wmsApi';
 import { useNotification } from '../../../contexts/NotificationContext';
 
 export default function CreateLoanModal({ isOpen, onClose, onSubmit }) {

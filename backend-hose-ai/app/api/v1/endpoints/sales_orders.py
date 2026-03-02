@@ -9,8 +9,12 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 import uuid
+import logging
+
+logger = logging.getLogger("integration")
 
 from app.core.database import get_db
+from app.core.helpers import get_enum_value
 from app.models import (
     SalesOrder, SOLine, Product,
     SOStatus
@@ -109,6 +113,200 @@ def list_sales_orders(
         }
     }
 
+
+# ============ Analytics (MUST be before /{so_id}) ============
+
+@router.get("/analytics/loss-analysis")
+def get_loss_analysis(
+    days: int = Query(90, ge=1, le=365),
+    db: Session = Depends(get_db)
+):
+    """
+    📉 Loss Analysis — Why are we losing deals?
+    
+    Aggregates cancelled SOs by reason for management insights.
+    """
+    from datetime import timedelta
+    
+    cutoff = datetime.now() - timedelta(days=days)
+    
+    cancelled_sos = db.query(SalesOrder).filter(
+        SalesOrder.status == SOStatus.CANCELLED,
+        SalesOrder.is_deleted == False,
+        SalesOrder.created_at >= cutoff
+    ).order_by(SalesOrder.created_at.desc()).all()
+    
+    # Parse reasons from notes
+    reason_counts = {}
+    total_value_lost = 0
+    
+    for so in cancelled_sos:
+        total = float(so.total or 0)
+        total_value_lost += total
+        
+        # Extract reason from notes
+        reason = "Tidak disebutkan"
+        if so.notes:
+            for line in so.notes.split('\n'):
+                if '📉' in line:
+                    parts = line.split(':', 1)
+                    if len(parts) > 1:
+                        reason = parts[1].strip()
+                    break
+        
+        if reason not in reason_counts:
+            reason_counts[reason] = {"count": 0, "total_value": 0}
+        reason_counts[reason]["count"] += 1
+        reason_counts[reason]["total_value"] += total
+    
+    # Sort by count
+    reasons_sorted = sorted(
+        [{"reason": k, **v} for k, v in reason_counts.items()],
+        key=lambda x: x["count"],
+        reverse=True
+    )
+    
+    return {
+        "status": "success",
+        "period_days": days,
+        "summary": {
+            "total_cancelled": len(cancelled_sos),
+            "total_value_lost": total_value_lost,
+        },
+        "by_reason": reasons_sorted,
+        "recent_cancellations": [
+            {
+                "so_number": so.so_number,
+                "customer": so.customer_name,
+                "total": float(so.total or 0),
+                "date": so.created_at.strftime('%Y-%m-%d') if so.created_at else None,
+                "notes": so.notes
+            }
+            for so in cancelled_sos[:10]
+        ]
+    }
+
+
+# ============ Customer History (MUST be before /{so_id}) ============
+
+@router.get("/customers/list")
+def list_so_customers(
+    search: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    📋 Get unique customer list from SO history
+    """
+    from sqlalchemy import func, distinct
+    
+    query = db.query(
+        SalesOrder.customer_name,
+        SalesOrder.customer_phone,
+        SalesOrder.customer_address,
+        func.count(SalesOrder.id).label('total_orders'),
+        func.sum(SalesOrder.total).label('total_value')
+    ).filter(
+        SalesOrder.is_deleted == False
+    ).group_by(
+        SalesOrder.customer_name,
+        SalesOrder.customer_phone,
+        SalesOrder.customer_address
+    )
+    
+    if search:
+        query = query.filter(SalesOrder.customer_name.ilike(f"%{search}%"))
+    
+    customers = query.order_by(SalesOrder.customer_name).all()
+    
+    return {
+        "status": "success",
+        "total": len(customers),
+        "data": [
+            {
+                "customer_name": c.customer_name,
+                "customer_phone": c.customer_phone,
+                "customer_address": c.customer_address,
+                "total_orders": c.total_orders,
+                "total_value": c.total_value or 0
+            }
+            for c in customers
+        ]
+    }
+
+
+@router.get("/customers/history/{customer_name}")
+def get_customer_history(
+    customer_name: str,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """
+    📜 Get purchase history for a specific customer
+    
+    Returns all SO lines with product info, date, quantity
+    """
+    from app.models import DeliveryOrder, DOLine
+    
+    # Get all SOs for this customer
+    orders = db.query(SalesOrder).filter(
+        SalesOrder.customer_name.ilike(f"%{customer_name}%"),
+        SalesOrder.is_deleted == False
+    ).order_by(SalesOrder.order_date.desc()).all()
+    
+    history = []
+    
+    for so in orders:
+        for line in so.lines:
+            product_name = line.description
+            if line.product:
+                product_name = f"{line.product.sku} - {line.product.name}"
+            
+            # Check delivery status
+            delivered_qty = 0
+            for do in so.delivery_orders:
+                for do_line in do.lines:
+                    if do_line.so_line_id == line.id and get_enum_value(do.status) == "DELIVERED":
+                        delivered_qty += do_line.qty
+            
+            history.append({
+                "tanggal": so.order_date.isoformat() if so.order_date else so.created_at.isoformat() if so.created_at else None,
+                "so_number": so.so_number,
+                "product_sku": line.product.sku if line.product else None,
+                "product_name": product_name,
+                "qty_ordered": line.qty,
+                "qty_delivered": delivered_qty,
+                "unit_price": line.unit_price,
+                "line_total": line.line_total,
+                "status": so.status.value
+            })
+    
+    # Pagination
+    total = len(history)
+    history = history[skip:skip + limit]
+    
+    # Calculate summary
+    total_ordered = sum(h["qty_ordered"] for h in history)
+    total_delivered = sum(h["qty_delivered"] for h in history)
+    total_value = sum(h["line_total"] or 0 for h in history)
+    
+    return {
+        "status": "success",
+        "customer_name": customer_name,
+        "summary": {
+            "total_transactions": total,
+            "total_qty_ordered": total_ordered,
+            "total_qty_delivered": total_delivered,
+            "total_value": total_value
+        },
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "data": history
+    }
+
+
+# ============ SO Detail (path-param routes below) ============
 
 @router.get("/{so_id}")
 def get_sales_order(
@@ -231,7 +429,7 @@ def confirm_sales_order(
     so_id: int,
     db: Session = Depends(get_db)
 ):
-    """Confirm SO - ready for JO creation"""
+    """Confirm SO - ready for JO creation (with margin check)"""
     so = db.query(SalesOrder).filter(
         SalesOrder.id == so_id,
         SalesOrder.is_deleted == False
@@ -243,14 +441,91 @@ def confirm_sales_order(
     if so.status != SOStatus.DRAFT:
         raise HTTPException(status_code=400, detail="Hanya SO Draft yang bisa dikonfirmasi")
     
+    # --- Margin Check ---
+    MARGIN_THRESHOLD = 15.0  # Minimum margin % before requiring approval
+    low_margin_lines = []
+    
+    for line in so.lines:
+        if line.product and line.unit_price and line.unit_price > 0:
+            # Get buy price from product
+            buy_price = float(getattr(line.product, 'buy_price', 0) or getattr(line.product, 'cost_price', 0) or 0)
+            sell_price = float(line.unit_price)
+            if buy_price > 0:
+                margin_pct = ((sell_price - buy_price) / sell_price) * 100
+                if margin_pct < MARGIN_THRESHOLD:
+                    low_margin_lines.append({
+                        "line_number": line.line_number,
+                        "product": line.description,
+                        "buy_price": buy_price,
+                        "sell_price": sell_price,
+                        "margin_pct": round(margin_pct, 1)
+                    })
+    
+    if low_margin_lines:
+        # Flag as needing approval
+        so.status = SOStatus.PENDING_APPROVAL if hasattr(SOStatus, 'PENDING_APPROVAL') else SOStatus.CONFIRMED
+        so.notes = (so.notes or '') + f"\n⚠️ LOW MARGIN: {len(low_margin_lines)} line(s) below {MARGIN_THRESHOLD}%"
+        db.commit()
+        
+        return {
+            "status": "warning",
+            "message": f"SO memiliki {len(low_margin_lines)} barang dengan margin dibawah {MARGIN_THRESHOLD}%. Perlu approval Manager.",
+            "needs_approval": True,
+            "low_margin_lines": low_margin_lines,
+            "data": so.to_dict_simple()
+        }
+    
     so.status = SOStatus.CONFIRMED
     so.approved_at = datetime.now()
     
     db.commit()
     
+    # 🔗 INTEGRATION: Auto-create JO for assembly lines
+    integration_result = None
+    try:
+        from app.services.integration import on_so_confirmed
+        integration_result = on_so_confirmed(db, so_id)
+        db.commit()
+    except Exception as e:
+        logger.warning(f"Integration hook failed (non-blocking): {e}")
+    
     return {
         "status": "success",
         "message": f"SO {so.so_number} berhasil dikonfirmasi",
+        "needs_approval": False,
+        "data": so.to_dict_simple(),
+        "integration": integration_result
+    }
+
+
+@router.post("/{so_id}/approve-margin")
+def approve_low_margin(
+    so_id: int,
+    approved_by: str = Query("Manager"),
+    db: Session = Depends(get_db)
+):
+    """
+    ✅ Manager approval for low-margin SO
+    
+    Allows confirming an SO that was flagged for low margin.
+    """
+    so = db.query(SalesOrder).filter(
+        SalesOrder.id == so_id,
+        SalesOrder.is_deleted == False
+    ).first()
+    
+    if not so:
+        raise HTTPException(status_code=404, detail="Sales Order tidak ditemukan")
+    
+    so.status = SOStatus.CONFIRMED
+    so.approved_at = datetime.now()
+    so.notes = (so.notes or '') + f"\n✅ Margin approved by {approved_by} at {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    
+    db.commit()
+    
+    return {
+        "status": "success",
+        "message": f"SO {so.so_number} berhasil di-approve oleh {approved_by}",
         "data": so.to_dict_simple()
     }
 
@@ -258,9 +533,10 @@ def confirm_sales_order(
 @router.delete("/{so_id}")
 def delete_sales_order(
     so_id: int,
+    reason_lost: str = Query(None, description="Reason for cancellation/loss"),
     db: Session = Depends(get_db)
 ):
-    """Soft delete SO"""
+    """Soft delete SO with optional loss reason"""
     so = db.query(SalesOrder).filter(
         SalesOrder.id == so_id,
         SalesOrder.is_deleted == False
@@ -274,6 +550,8 @@ def delete_sales_order(
     
     so.is_deleted = True
     so.status = SOStatus.CANCELLED
+    if reason_lost:
+        so.notes = (so.notes or '') + f"\n📉 Reason lost: {reason_lost}"
     db.commit()
     
     return {
@@ -282,151 +560,25 @@ def delete_sales_order(
     }
 
 
-# ============ Customer History ============
-
-@router.get("/customers/list")
-def list_customers(
-    search: Optional[str] = None,
-    db: Session = Depends(get_db)
-):
-    """
-    📋 Get unique customer list from SO history
-    """
-    from sqlalchemy import func, distinct
-    
-    query = db.query(
-        SalesOrder.customer_name,
-        SalesOrder.customer_phone,
-        SalesOrder.customer_address,
-        func.count(SalesOrder.id).label('total_orders'),
-        func.sum(SalesOrder.total).label('total_value')
-    ).filter(
-        SalesOrder.is_deleted == False
-    ).group_by(
-        SalesOrder.customer_name,
-        SalesOrder.customer_phone,
-        SalesOrder.customer_address
-    )
-    
-    if search:
-        query = query.filter(SalesOrder.customer_name.ilike(f"%{search}%"))
-    
-    customers = query.order_by(SalesOrder.customer_name).all()
-    
-    return {
-        "status": "success",
-        "total": len(customers),
-        "data": [
-            {
-                "customer_name": c.customer_name,
-                "customer_phone": c.customer_phone,
-                "customer_address": c.customer_address,
-                "total_orders": c.total_orders,
-                "total_value": c.total_value or 0
-            }
-            for c in customers
-        ]
-    }
-
-
-@router.get("/customers/history/{customer_name}")
-def get_customer_history(
-    customer_name: str,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
-    db: Session = Depends(get_db)
-):
-    """
-    📜 Get purchase history for a specific customer
-    
-    Returns all SO lines with product info, date, quantity
-    """
-    from app.models import DeliveryOrder, DOLine
-    
-    # Get all SOs for this customer
-    orders = db.query(SalesOrder).filter(
-        SalesOrder.customer_name.ilike(f"%{customer_name}%"),
-        SalesOrder.is_deleted == False
-    ).order_by(SalesOrder.order_date.desc()).all()
-    
-    history = []
-    
-    for so in orders:
-        for line in so.lines:
-            product_name = line.description
-            if line.product:
-                product_name = f"{line.product.sku} - {line.product.name}"
-            
-            # Check delivery status
-            delivered_qty = 0
-            for do in so.delivery_orders:
-                for do_line in do.lines:
-                    if do_line.so_line_id == line.id and do.status.value == "DELIVERED":
-                        delivered_qty += do_line.qty
-            
-            history.append({
-                "tanggal": so.order_date.isoformat() if so.order_date else so.created_at.isoformat() if so.created_at else None,
-                "so_number": so.so_number,
-                "product_sku": line.product.sku if line.product else None,
-                "product_name": product_name,
-                "qty_ordered": line.qty,
-                "qty_delivered": delivered_qty,
-                "unit_price": line.unit_price,
-                "line_total": line.line_total,
-                "status": so.status.value
-            })
-    
-    # Pagination
-    total = len(history)
-    history = history[skip:skip + limit]
-    
-    # Calculate summary
-    total_ordered = sum(h["qty_ordered"] for h in history)
-    total_delivered = sum(h["qty_delivered"] for h in history)
-    total_value = sum(h["line_total"] or 0 for h in history)
-    
-    return {
-        "status": "success",
-        "customer_name": customer_name,
-        "summary": {
-            "total_transactions": total,
-            "total_qty_ordered": total_ordered,
-            "total_qty_delivered": total_delivered,
-            "total_value": total_value
-        },
-        "total": total,
-        "skip": skip,
-        "limit": limit,
-        "data": history
-    }
-
-
-# ============ Payment Tracking ============
-
-class PaymentUpdate(BaseModel):
-    """Update payment on SO"""
-    amount: float  # Amount being paid
-    payment_date: Optional[datetime] = None
-    payment_method: Optional[str] = None  # CASH, TRANSFER, GIRO
-    payment_note: Optional[str] = None
-
-
-@router.post("/{so_id}/payment")
-def record_payment(
+@router.post("/{so_id}/cancel")
+def cancel_sales_order(
     so_id: int,
-    data: PaymentUpdate,
+    reason_lost: str = Query("Dibatalkan", description="Reason for cancellation"),
+    cancelled_by: str = Query("Admin"),
     db: Session = Depends(get_db)
 ):
     """
-    💳 Record payment for a Sales Order
+    ❌ Cancel SO — cascades to linked JOs and unreserves allocated materials.
     
-    Updates payment_status:
-    - UNPAID: amount_paid == 0
-    - PARTIAL: 0 < amount_paid < total
-    - PAID: amount_paid >= total
+    1. Marks SO as CANCELLED
+    2. Finds all linked Job Orders and marks them CANCELLED
+    3. Unreserves any allocated JOMaterial back to InventoryBatch
+    4. Logs UNRESERVE movements for audit trail
     """
-    from decimal import Decimal
-    
+    from app.models import JobOrder, JOMaterial, InventoryBatch
+    from app.models.enums import MovementType, JOMaterialStatus
+    from app.models.batch_movement import log_movement
+
     so = db.query(SalesOrder).filter(
         SalesOrder.id == so_id,
         SalesOrder.is_deleted == False
@@ -435,272 +587,58 @@ def record_payment(
     if not so:
         raise HTTPException(status_code=404, detail="Sales Order tidak ditemukan")
     
-    # Calculate new amount paid
-    current_paid = float(so.amount_paid or 0)
-    new_paid = current_paid + data.amount
-    total = float(so.total or 0)
+    if so.status == SOStatus.CANCELLED:
+        raise HTTPException(status_code=400, detail="SO sudah dibatalkan")
     
-    # Prevent overpayment
-    if new_paid > total:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Pembayaran melebihi total. Sisa tagihan: Rp {total - current_paid:,.0f}"
-        )
+    # 1. Cancel the SO
+    so.status = SOStatus.CANCELLED
+    so.notes = (so.notes or '') + f"\n📉 CANCELLED by {cancelled_by}: {reason_lost}"
     
-    # Update payment
-    so.amount_paid = Decimal(new_paid)
+    # 2. Cascade to linked Job Orders
+    cancelled_jos = []
+    linked_jos = db.query(JobOrder).filter(JobOrder.so_id == so_id).all()
     
-    # Update status
-    if new_paid >= total:
-        so.payment_status = "PAID"
-    elif new_paid > 0:
-        so.payment_status = "PARTIAL"
-    else:
-        so.payment_status = "UNPAID"
+    for jo in linked_jos:
+        if jo.status in ['COMPLETED', 'DELIVERED']:
+            continue  # Don't cancel already completed/delivered JOs
+        
+        jo.status = 'CANCELLED'
+        jo.notes = (jo.notes or '') + f"\n❌ Auto-cancelled: SO {so.so_number} dibatalkan"
+        cancelled_jos.append(jo.jo_number)
+        
+        # 3. Unreserve allocated materials
+        for line in jo.lines:
+            for mat in line.materials:
+                if mat.status in [JOMaterialStatus.ALLOCATED.value, 'ALLOCATED']:
+                    batch = mat.batch
+                    if batch:
+                        qty_before = batch.current_qty
+                        batch.current_qty += mat.allocated_qty
+                        
+                        # Log the UNRESERVE movement
+                        log_movement(
+                            db=db,
+                            batch_id=batch.id,
+                            movement_type=MovementType.UNRESERVE,
+                            qty=mat.allocated_qty,
+                            qty_before=qty_before,
+                            qty_after=batch.current_qty,
+                            from_location_id=batch.location_id,
+                            to_location_id=batch.location_id,
+                            reference_type="SO_CANCEL",
+                            reference_id=so.id,
+                            reference_number=so.so_number,
+                            performed_by=cancelled_by,
+                            reason=f"SO Cancelled: {reason_lost}"
+                        )
+                    
+                    mat.status = 'RETURNED'
     
     db.commit()
     
     return {
         "status": "success",
-        "message": f"Pembayaran Rp {data.amount:,.0f} berhasil dicatat",
-        "data": {
-            "so_number": so.so_number,
-            "customer_name": so.customer_name,
-            "total": total,
-            "amount_paid": new_paid,
-            "amount_due": total - new_paid,
-            "payment_status": so.payment_status
-        }
+        "message": f"SO {so.so_number} dibatalkan: {reason_lost}",
+        "cancelled_jos": cancelled_jos,
+        "data": so.to_dict_simple()
     }
-
-
-@router.get("/piutang/summary")
-def get_piutang_summary(
-    db: Session = Depends(get_db)
-):
-    """
-    📊 Get summary of outstanding receivables (Piutang)
-    """
-    from sqlalchemy import func
-    
-    # Get all non-paid SOs
-    query = db.query(SalesOrder).filter(
-        SalesOrder.is_deleted == False,
-        SalesOrder.payment_status.in_(["UNPAID", "PARTIAL"])
-    )
-    
-    orders = query.all()
-    
-    total_piutang = 0
-    by_customer = {}
-    
-    for so in orders:
-        amount_due = float(so.total or 0) - float(so.amount_paid or 0)
-        total_piutang += amount_due
-        
-        customer = so.customer_name
-        if customer not in by_customer:
-            by_customer[customer] = {
-                "customer_name": customer,
-                "total_orders": 0,
-                "total_piutang": 0,
-                "orders": []
-            }
-        
-        by_customer[customer]["total_orders"] += 1
-        by_customer[customer]["total_piutang"] += amount_due
-        by_customer[customer]["orders"].append({
-            "so_number": so.so_number,
-            "order_date": so.order_date.isoformat() if so.order_date else None,
-            "due_date": so.payment_due_date.isoformat() if so.payment_due_date else None,
-            "total": float(so.total or 0),
-            "amount_paid": float(so.amount_paid or 0),
-            "amount_due": amount_due,
-            "payment_status": so.payment_status
-        })
-    
-    # Sort by highest piutang
-    customers_list = sorted(
-        by_customer.values(), 
-        key=lambda x: x["total_piutang"], 
-        reverse=True
-    )
-    
-    return {
-        "status": "success",
-        "summary": {
-            "total_piutang": total_piutang,
-            "total_customers": len(by_customer),
-            "total_unpaid_orders": len(orders)
-        },
-        "data": customers_list
-    }
-
-
-@router.get("/piutang/aging")
-def get_aging_schedule(db: Session = Depends(get_db)):
-    """
-    📊 Get Aging Schedule (Umur Piutang)
-    
-    Groups receivables by age:
-    - CURRENT: Belum jatuh tempo
-    - 1-30: Telat 1-30 hari
-    - 31-60: Telat 31-60 hari
-    - 61-90: Telat 61-90 hari
-    - >90: Macet (lebih dari 90 hari)
-    """
-    from datetime import date, timedelta
-    
-    today = date.today()
-    
-    # Get all unpaid SOs
-    orders = db.query(SalesOrder).filter(
-        SalesOrder.is_deleted == False,
-        SalesOrder.payment_status.in_(["UNPAID", "PARTIAL"])
-    ).all()
-    
-    # Initialize aging buckets
-    aging = {
-        "current": {"label": "Belum Jatuh Tempo", "count": 0, "total": 0, "orders": []},
-        "1_30": {"label": "1-30 Hari", "count": 0, "total": 0, "orders": []},
-        "31_60": {"label": "31-60 Hari", "count": 0, "total": 0, "orders": []},
-        "61_90": {"label": "61-90 Hari", "count": 0, "total": 0, "orders": []},
-        "over_90": {"label": ">90 Hari (Macet)", "count": 0, "total": 0, "orders": []}
-    }
-    
-    total_piutang = 0
-    
-    for so in orders:
-        amount_due = float(so.total or 0) - float(so.amount_paid or 0)
-        total_piutang += amount_due
-        
-        # Calculate days overdue
-        days_overdue = 0
-        try:
-            if so.payment_due_date:
-                due = so.payment_due_date
-                if hasattr(due, 'date'):
-                    due = due.date()
-                days_overdue = (today - due).days
-            elif so.order_date:
-                # If no due date, use order date + 30 days as default
-                order_dt = so.order_date
-                if hasattr(order_dt, 'date'):
-                    order_dt = order_dt.date()
-                default_due = order_dt + timedelta(days=30)
-                days_overdue = (today - default_due).days
-        except Exception:
-            days_overdue = 0
-        
-        order_info = {
-            "so_number": so.so_number,
-            "customer_name": so.customer_name,
-            "order_date": so.order_date.isoformat() if so.order_date else None,
-            "due_date": so.payment_due_date.isoformat() if so.payment_due_date else None,
-            "days_overdue": max(0, days_overdue),
-            "total": float(so.total or 0),
-            "amount_paid": float(so.amount_paid or 0),
-            "amount_due": amount_due
-        }
-        
-        # Categorize by age
-        if days_overdue <= 0:
-            bucket = "current"
-        elif days_overdue <= 30:
-            bucket = "1_30"
-        elif days_overdue <= 60:
-            bucket = "31_60"
-        elif days_overdue <= 90:
-            bucket = "61_90"
-        else:
-            bucket = "over_90"
-        
-        aging[bucket]["count"] += 1
-        aging[bucket]["total"] += amount_due
-        aging[bucket]["orders"].append(order_info)
-    
-    # Calculate percentages
-    for key in aging:
-        if total_piutang > 0:
-            aging[key]["percentage"] = round(aging[key]["total"] / total_piutang * 100, 1)
-        else:
-            aging[key]["percentage"] = 0
-    
-    return {
-        "status": "success",
-        "summary": {
-            "total_piutang": total_piutang,
-            "total_orders": len(orders),
-            "overdue_amount": sum(aging[k]["total"] for k in ["1_30", "31_60", "61_90", "over_90"]),
-            "macet_amount": aging["over_90"]["total"]
-        },
-        "aging": aging
-    }
-
-
-@router.post("/{so_id}/create-dp", tags=["Sales Orders (Go-Live)"])
-def create_customer_dp(
-    so_id: int,
-    amount: float,
-    db: Session = Depends(get_db)
-):
-    """
-    💰 Create Down Payment Invoice (Faktur Uang Muka)
-    
-    1. Validate amount vs SO Total
-    2. Create a special Invoice (is_dp=True)
-    3. Update SO.dp_amount
-    """
-    so = db.query(SalesOrder).filter(SalesOrder.id == so_id).first()
-    if not so:
-        raise HTTPException(status_code=404, detail="SO not found")
-        
-    if amount > float(so.total):
-        raise HTTPException(status_code=400, detail="DP melebihi total order")
-        
-    # Create Invoice Header
-    import uuid
-    from app.models.invoice import Invoice, InvoiceLine
-    
-    inv_number = f"INV-DP-{datetime.now().strftime('%y%m')}-{uuid.uuid4().hex[:4].upper()}"
-    
-    invoice = Invoice(
-        invoice_number=inv_number,
-        so_id=so.id,
-        so_number=so.so_number,
-        customer_id=so.customer_id,
-        customer_name=so.customer_name,
-        invoice_date=date.today(),
-        due_date=date.today(), # DP is usually immediate
-        subtotal=amount, # Simplified
-        discount=0,
-        tax_amount=0, # Handling tax on DP is complex, treat as lump sum
-        total=Decimal(amount),
-        status="SENT",
-        is_dp=True,
-        payment_status="UNPAID"
-    )
-    db.add(invoice)
-    db.flush()
-    
-    # Line Item
-    line = InvoiceLine(
-        invoice_id=invoice.id,
-        description=f"Uang Muka / Down Payment for Order {so.so_number}",
-        qty=1,
-        unit_price=amount,
-        line_total=amount
-    )
-    db.add(line)
-    
-    # Update SO
-    so.dp_amount = Decimal(amount)
-    so.dp_invoice_id = invoice.id
-    
-    db.commit()
-    return {
-        "status": "success",
-        "message": f"Faktur Uang Muka {inv_number} berhasil dibuat",
-        "invoice_id": invoice.id
-    }
-

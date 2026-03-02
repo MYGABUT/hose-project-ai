@@ -17,7 +17,7 @@ import { useAnalytics } from '../../contexts/AnalyticsContext';
 import Card from '../../components/common/Card/Card';
 import Button from '../../components/common/Button/Button';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import './AnalyticsDashboard.css';
 
@@ -146,7 +146,7 @@ export default function AnalyticsDashboard() {
             doc.setFontSize(14);
             doc.text('Top 10 Produk Terlaris', 14, 92);
 
-            doc.autoTable({
+            autoTable(doc, {
                 startY: 98,
                 head: [['#', 'SKU', 'Nama Produk', 'Qty', 'Revenue']],
                 body: (topSellingItems || []).map(item => [
@@ -165,7 +165,7 @@ export default function AnalyticsDashboard() {
             doc.setFontSize(14);
             doc.text('Leaderboard Sales', 14, finalY);
 
-            doc.autoTable({
+            autoTable(doc, {
                 startY: finalY + 6,
                 head: [['Ranking', 'Nama Sales', 'Total Pendapatan', 'Transaksi']],
                 body: (salesLeaderboard || []).map(s => [

@@ -334,7 +334,7 @@ export default function MasterProduk() {
                                                         const subId = prompt("Masukkan ID Produk Pengganti (Substitute) untuk SKU " + product.sku + ":");
                                                         if (subId) {
                                                             // Call API
-                                                            fetch(`${import.meta.env.VITE_AI_API_URL || 'http://localhost:8000'}/api/v1/products/${product.id}/substitutes`, {
+                                                            fetch(`${import.meta.env.VITE_AI_API_URL || ""}/api/v1/products/${product.id}/substitutes`, {
                                                                 method: 'POST',
                                                                 headers: { 'Content-Type': 'application/json' },
                                                                 body: JSON.stringify({ substitute_product_id: parseInt(subId) })

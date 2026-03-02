@@ -10,7 +10,12 @@ Strategi:
 5. Inverted - Versi negatif
 """
 
-import cv2
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+    print("[WARNING] cv2 not available - image enhancement disabled")
 import numpy as np
 from typing import List, Optional
 from pathlib import Path
@@ -67,6 +72,10 @@ class HoseImageEnhancer:
         Returns:
             List gambar untuk di-scan semuanya
         """
+        if not CV2_AVAILABLE:
+            print("[WARNING] cv2 not available - skipping image enhancement")
+            return []
+
         # 1. Decode Image
         nparr = np.frombuffer(image_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)

@@ -2,11 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { getReadyToShipItems, createDeliveryOrder, getDeliveryOrders, downloadSuratJalan } from '../../services/deliveryApi';
 import { FaTruck, FaFileWord, FaPlus, FaBoxOpen } from 'react-icons/fa';
-
-import React, { useState, useEffect } from 'react';
-import { getReadyToShipItems, createDeliveryOrder, getDeliveryOrders, downloadSuratJalan } from '../../services/deliveryApi';
 import { useNotification } from '../../contexts/NotificationContext';
-import { FaTruck, FaFileWord, FaPlus, FaBoxOpen } from 'react-icons/fa';
 
 const DeliveryPage = () => {
     const { addNotification } = useNotification();

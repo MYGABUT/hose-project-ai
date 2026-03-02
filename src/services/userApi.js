@@ -3,7 +3,9 @@
  * Connects frontend to Python FastAPI backend for user management
  */
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
+import { getAuthHeader } from './api';
+
+const API_BASE_URL = import.meta.env.VITE_AI_API_URL || "";
 
 /**
  * Login user
@@ -49,7 +51,9 @@ export async function getUsers(params = {}) {
         if (params.active_only !== undefined) queryParams.append('active_only', params.active_only);
 
         const response = await fetch(
-            `${API_BASE_URL}/api/v1/users?${queryParams.toString()}`
+            `${API_BASE_URL}/api/v1/users?${queryParams.toString()}`, {
+            headers: { ...getAuthHeader() }
+        }
         );
 
         if (!response.ok) {
@@ -74,7 +78,9 @@ export async function getUsers(params = {}) {
  */
 export async function getUser(userId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/users/${userId}`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/users/${userId}`, {
+            headers: { ...getAuthHeader() }
+        });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         return await response.json();
     } catch (error) {
@@ -94,6 +100,7 @@ export async function createUser(userData) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...getAuthHeader()
             },
             body: JSON.stringify(userData),
         });
@@ -126,6 +133,7 @@ export async function updateUser(userId, userData) {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
+                ...getAuthHeader()
             },
             body: JSON.stringify(userData),
         });
@@ -155,6 +163,7 @@ export async function deleteUser(userId) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/v1/users/${userId}`, {
             method: 'DELETE',
+            headers: { ...getAuthHeader() }
         });
 
         if (!response.ok) {

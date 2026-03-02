@@ -3,7 +3,7 @@
  * Delivery Orders and dispatch management
  */
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_AI_API_URL || "";
 
 /**
  * Get items ready to ship

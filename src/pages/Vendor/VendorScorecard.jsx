@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Card from '../../components/common/Card/Card';
 import Button from '../../components/common/Button/Button';
 import Modal from '../../components/common/Modal/Modal';
-import { getVendorScorecard } from '../../services/supplierApi';
+import { supplierApi } from '../../services/supplierApi';
 import './VendorScorecard.css';
 
 const gradeConfig = {
@@ -31,7 +31,7 @@ export default function VendorScorecard() {
 
     const loadData = async () => {
         setLoading(true);
-        const res = await getVendorScorecard();
+        const res = await supplierApi.getVendorScorecard();
         if (res.status === 'success') {
             setVendors(res.data);
         }

@@ -14,7 +14,7 @@ import {
     substituteMaterial,
     addJobMaterial
 } from '../../services/productionApi';
-import { getAvailableBatches } from '../../services/inventoryApi';
+import { getAvailableBatches } from '../../services/wmsApi';
 import './Production.css';
 
 const STATUS_BADGES = {

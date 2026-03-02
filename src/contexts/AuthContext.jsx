@@ -14,11 +14,23 @@ export const ROLES = {
     QC: 'qc',
     PURCHASING: 'purchasing',
     FINANCE: 'finance',
-    DELIVERY: 'delivery'
+    DELIVERY: 'delivery',
+    DEVELOPER: 'developer'
 };
 
 // Role configurations with permissions
 export const ROLE_CONFIG = {
+    [ROLES.DEVELOPER]: {
+        label: 'Developer',
+        icon: '💻',
+        color: '#000000',
+        permissions: ['*'],
+        canEditHPP: true,
+        canApproveQuotation: true,
+        canAccessKiosk: true,
+        canAccessAllMachines: true,
+        isHidden: true // Flag to hide from UI management
+    },
     [ROLES.SUPER_ADMIN]: {
         label: 'Super Admin',
         icon: '👑',
@@ -227,6 +239,7 @@ export function AuthProvider({ children }) {
             if (res.status === 'success') {
                 const userData = {
                     ...res.data,
+                    access_token: res.access_token,
                     roleConfig: ROLE_CONFIG[res.data.role],
                     loginTime: new Date().toISOString(),
                     loginMethod: 'email'

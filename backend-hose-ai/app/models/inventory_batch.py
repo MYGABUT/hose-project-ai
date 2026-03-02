@@ -77,6 +77,10 @@ class InventoryBatch(Base):
     created_by = Column(String(50))
     notes = Column(Text)
     
+    # Opname Tracking
+    is_opnamed = Column(Boolean, default=False)
+    last_opname_date = Column(DateTime(timezone=True), nullable=True)
+    
     # Soft delete
     is_deleted = Column(Boolean, default=False)
     deleted_at = Column(DateTime(timezone=True))
@@ -90,6 +94,10 @@ class InventoryBatch(Base):
     location = relationship("StorageLocation", back_populates="batches")
     movements = relationship("BatchMovement", back_populates="batch")
     
+    # NEW: Multi-Entity Support (Asset Owner)
+    owner_id = Column(Integer, ForeignKey("companies.id"), nullable=True) # Nullable for migration
+    owner = relationship("Company", back_populates="owned_batches")
+
     def __repr__(self):
         return f"<InventoryBatch {self.barcode}: {self.current_qty} ({self.status})>"
     
@@ -144,6 +152,10 @@ class InventoryBatch(Base):
             "ai_confidence": self.ai_confidence,
             "image_path": f"/static/{self.image_path}" if self.image_path else None,
             "notes": self.notes,
+            "is_opnamed": self.is_opnamed,
+            "last_opname_date": self.last_opname_date.isoformat() if self.last_opname_date else None,
+            "owner_id": self.owner_id,
+            "owner_name": self.owner.name if self.owner else "Unknown",
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "location": self.location.to_dict() if self.location else None,
             "product": self.product.to_dict() if self.product else None,
@@ -165,7 +177,10 @@ class InventoryBatch(Base):
             "product_name": self.product.name if self.product else None,
             "product_sku": self.product.sku if self.product else None,
             "product_brand": self.product.brand if self.product else None,
+            "product_brand": self.product.brand if self.product else None,
             "product_category": self.product.category.value if self.product and self.product.category else None,
+            "owner_id": self.owner_id,
+            "owner_name": self.owner.name if self.owner else None,
             "unit": self.product.unit.value if self.product and self.product.unit else "pcs",
             "received_date": self.received_date.isoformat() if self.received_date else None,
             

@@ -14,6 +14,7 @@ from datetime import datetime
 import uuid
 
 from app.core.database import get_db
+from app.core.helpers import get_enum_value
 from app.models import (
     InventoryBatch, 
     Product, 
@@ -21,8 +22,10 @@ from app.models import (
     BatchMovement,
     BatchStatus,
     MovementType,
-    log_movement
+    log_movement,
+    Company
 )
+from app.core.deps import get_current_company
 
 
 router = APIRouter(prefix="/batches", tags=["Inventory Batches"])
@@ -43,6 +46,15 @@ class BatchInbound(BaseModel):
     wire_type: Optional[str] = None
     working_pressure_bar: Optional[float] = None
     working_pressure_psi: Optional[float] = None
+    
+    # Phase 14: Dynamic component specs
+    category: Optional[str] = None
+    thread_type: Optional[str] = None
+    thread_size: Optional[str] = None
+    seal_type: Optional[str] = None
+    configuration: Optional[str] = None
+    is_cut_piece: Optional[bool] = False
+    cut_length_cm: Optional[float] = None
     
     # Location & quantity
     location_code: str
@@ -99,12 +111,43 @@ async def list_batches(
     location_code: Optional[str] = None,
     status: Optional[str] = None,
     brand: Optional[str] = None,
+    owner_id: Optional[int] = None,
+    company_id: Optional[int] = None,
     search: Optional[str] = None,
     available_only: bool = False,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company)
 ):
-    """📦 List inventory batches with filtering"""
+    """📦 List inventory batches with filtering (Scoped by Company)"""
     query = db.query(InventoryBatch).filter(InventoryBatch.is_deleted == False)
+    
+    # --- Multi-Entity Scoping ---
+    if not current_company.is_parent:
+        # Anak Perusahaan Restriction:
+        # 1. Show Stock in My Warehouse (Custody - regardless of owner)
+        # 2. OR Show Stock I Own (Assets - regardless of location)
+        # For performance/simplicity in this view, we primarily focus on "Stock I can see/manage".
+        # Let's use a UNION logic or just filter based on intent.
+        
+        # If user explicitly asks for "My Assets at other locations" (Consignment Out tracking)
+        if owner_id == current_company.id:
+             query = query.filter(InventoryBatch.owner_id == current_company.id)
+        
+        # Default View: Stock in My Warehouse (including Consignment In)
+        # If no specific filters, we default to "What is in my custody?"
+        elif not company_id and not owner_id:
+             query = query.join(StorageLocation).filter(StorageLocation.company_id == current_company.id)
+             
+        # If they try to filter by another company's warehouse -> FORBID/OVERRIDE
+        elif company_id and company_id != current_company.id:
+             # They are trying to peek at another warehouse
+             # Only allow if they are looking for THEIR OWN assets there
+             if owner_id != current_company.id:
+                 return {"status": "success", "total": 0, "data": []}
+    
+    # Induk (Parent) sees all, but we respect filters if provided.
+    
+    # --- End Scoping ---
     
     if product_id:
         query = query.filter(InventoryBatch.product_id == product_id)
@@ -139,6 +182,13 @@ async def list_batches(
     
     if brand:
         query = query.join(Product).filter(Product.brand == brand.upper())
+
+    if owner_id:
+        query = query.filter(InventoryBatch.owner_id == owner_id)
+        
+    if company_id:
+        # Filter by Location's Company (Stock in specific company's warehouse)
+        query = query.join(StorageLocation).filter(StorageLocation.company_id == company_id)
     
     total = query.count()
     batches = query.order_by(InventoryBatch.received_date.desc()).offset(skip).limit(limit).all()
@@ -211,7 +261,8 @@ async def get_batch(barcode: str, db: Session = Depends(get_db)):
 @router.post("/inbound")
 async def receive_batch(
     data: BatchInbound,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company)
 ):
     """📥 Receive new batch (Barang Masuk)"""
     try:
@@ -247,21 +298,41 @@ async def receive_batch(
             
             if not product:
                 # Create new product
+                category_val = data.category.upper() if data.category else ProductCategory.HOSE.value
+                
+                # Base spec
+                specs = {
+                    "standard": data.standard,
+                    "size_inch": data.size_inch,
+                    "size_dn": data.size_dn,
+                    "wire_type": data.wire_type,
+                    "working_pressure_bar": data.working_pressure_bar,
+                    "working_pressure_psi": data.working_pressure_psi,
+                    "thread_type": data.thread_type,
+                    "thread_size": data.thread_size,
+                    "seal_type": data.seal_type,
+                    "configuration": data.configuration
+                }
+                
+                # Remove none
+                specs = {k: v for k, v in specs.items() if v is not None}
+                
+                # Product Name Logic
+                if category_val == "HOSE":
+                    prod_name = f"Hydraulic Hose {data.standard or ''} {data.size_inch or ''} {data.brand or ''}".strip()
+                elif category_val in ["FITTING", "ADAPTOR", "COUPLING", "VALVE"]:
+                    prod_name = f"{category_val.title()} {data.thread_type or ''} {data.configuration or ''} {data.thread_size or ''} {data.brand or ''}".strip()
+                else:
+                    prod_name = f"{category_val.title()} {data.size_inch or ''} {data.brand or ''}".strip()
+                
                 product = Product(
                     sku=new_sku,
-                    name=f"Hydraulic Hose {data.standard or ''} {data.size_inch or ''} {data.brand or ''}".strip(),
+                    name=prod_name,
                     brand=data.brand.upper() if data.brand else None,
-                    category=ProductCategory.HOSE.value,
-                    unit=ProductUnit.METER.value,
-                    specifications={
-                        "standard": data.standard,
-                        "size_inch": data.size_inch,
-                        "size_dn": data.size_dn,
-                        "wire_type": data.wire_type,
-                        "working_pressure_bar": data.working_pressure_bar,
-                        "working_pressure_psi": data.working_pressure_psi,
-                    },
-                    search_keywords=f"{new_sku} {data.brand} {data.standard} {data.size_inch}".upper()
+                    category=category_val,
+                    unit=ProductUnit.PCS.value if category_val != "HOSE" else ProductUnit.METER.value,
+                    specifications=specs,
+                    search_keywords=f"{new_sku} {data.brand} {data.standard} {data.size_inch} {data.thread_type} {data.thread_size}".upper()
                 )
                 db.add(product)
                 db.flush()
@@ -292,13 +363,47 @@ async def receive_batch(
                 )
 
         # Find location
+        location_code_upper = data.location_code.upper()
         location = db.query(StorageLocation).filter(
-            StorageLocation.code == data.location_code.upper(),
+            StorageLocation.code == location_code_upper,
             StorageLocation.is_active == True
         ).first()
         
+        # Phase 13: Auto-create Storage Location if it doesn't exist
         if not location:
-            raise HTTPException(status_code=404, detail=f"Location {data.location_code} not found")
+            from app.models.enums import LocationType
+            
+            # Simple heuristic for parsing zones and racks from code
+            parts = location_code_upper.split('-')
+            
+            zone_name = "AUTO-GENERATED"
+            rack_name = None
+            level_name = None
+            bin_name = None
+            
+            if len(parts) >= 1:
+                zone_name = parts[0]
+            if len(parts) >= 2:
+                rack_name = parts[1]
+            if len(parts) >= 3:
+                level_name = parts[2]
+            if len(parts) >= 4:
+                bin_name = parts[3]
+                
+            location = StorageLocation(
+                code=location_code_upper,
+                warehouse="MAIN",
+                zone=zone_name,
+                rack=rack_name,
+                level=level_name,
+                bin=bin_name,
+                type=LocationType.HOSE_RACK,
+                capacity=1000,
+                description="Auto-generated during Inbound",
+                company_id=current_company.id
+            )
+            db.add(location)
+            db.flush()
         
         # Generate barcode if not provided
         barcode = data.barcode 
@@ -354,7 +459,7 @@ async def receive_batch(
         
         return {
             "status": "success",
-            "message": f"Batch {barcode} received: {data.quantity} {product.unit.value}",
+            "message": f"Batch {barcode} received: {data.quantity} {get_enum_value(product.unit)}",
             "data": batch.to_dict()
         }
     except Exception as e:

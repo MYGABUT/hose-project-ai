@@ -10,8 +10,21 @@ import numpy as np
 from PIL import Image
 from io import BytesIO
 from typing import List, Dict, Any
-import cv2
-import easyocr
+
+# Optional heavy dependencies - graceful fallback if not installed
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+    print("[WARNING] cv2 not available - image preprocessing disabled")
+
+try:
+    import easyocr
+    EASYOCR_AVAILABLE = True
+except ImportError:
+    EASYOCR_AVAILABLE = False
+    print("[WARNING] easyocr not available - OCR features disabled")
 
 from app.core.config import settings
 

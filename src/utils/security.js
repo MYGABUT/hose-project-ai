@@ -9,10 +9,14 @@
 const ALLOWED_DOMAINS = [
     'localhost',
     '127.0.0.1',
+    'mutishamiyamizu.com',       // Production domain
+    'www.mutishamiyamizu.com',
+    'app.mutishamiyamizu.com',
     'hosepro.id',
     'www.hosepro.id',
     'app.hosepro.id',
-    // Add your production domains here
+    'trycloudflare.com',  // Cloudflare quick tunnel (dev/testing)
+    // Add additional domains here
 ];
 
 const ALLOWED_PORTS = ['5173', '5174', '3000', '80', '443', ''];
@@ -250,12 +254,12 @@ export function applySecurityHeaders() {
     cspMeta.httpEquiv = 'Content-Security-Policy';
     cspMeta.content = [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Needed for React
-        "style-src 'self' 'unsafe-inline'",
-        "img-src 'self' data: blob:",
-        "font-src 'self'",
-        "connect-src 'self' ws: wss: http://localhost:8000 http://127.0.0.1:8000", // For dev server + AI backend
-        "frame-ancestors 'self'", // Prevent iframe embedding
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "img-src 'self' data: blob: https:",
+        "font-src 'self' https://fonts.gstatic.com data:",
+        // connect-src uses 'self' so API goes through Nginx proxy (no hardcoded ports)
+        "connect-src 'self' ws: wss:",
     ].join('; ');
     document.head.appendChild(cspMeta);
 

@@ -239,3 +239,89 @@ def mass_reassign_customers(
         "status": "success",
         "message": f"{updated} customer dipindahkan dari {from_sales.name} ke {to_sales.name}"
     }
+
+
+@router.get("/leaderboard")
+def get_sales_leaderboard(
+    year: int = Query(None),
+    month: int = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    🏆 Sales Leaderboard — Target vs Achievement Comparison
+    
+    Shows ranking, achievement percentage, and performance badges.
+    """
+    now = date.today()
+    year = year or now.year
+    month = month or now.month
+    
+    salesmen = db.query(Salesman).filter(Salesman.is_active == True).all()
+    
+    leaderboard = []
+    for s in salesmen:
+        total_sales = db.query(sqlfunc.sum(SalesCommission.sales_amount)).filter(
+            SalesCommission.salesman_id == s.id,
+            SalesCommission.period_year == year,
+            SalesCommission.period_month == month
+        ).scalar() or 0
+        
+        total_commission = db.query(sqlfunc.sum(SalesCommission.commission_amount)).filter(
+            SalesCommission.salesman_id == s.id,
+            SalesCommission.period_year == year,
+            SalesCommission.period_month == month
+        ).scalar() or 0
+        
+        target = float(s.monthly_target or 0)
+        sales = float(total_sales)
+        achievement = round((sales / target * 100), 1) if target > 0 else 0
+        gap = sales - target
+        
+        # Badge system
+        if achievement >= 150:
+            badge = "🏆 MVP"
+        elif achievement >= 120:
+            badge = "⭐ Star"
+        elif achievement >= 100:
+            badge = "✅ On Target"
+        elif achievement >= 75:
+            badge = "📈 Almost"
+        elif achievement >= 50:
+            badge = "⚠️ Need Push"
+        else:
+            badge = "🔴 Critical"
+        
+        leaderboard.append({
+            "rank": 0,  # will be set after sort
+            "salesman_id": s.id,
+            "name": s.name,
+            "code": s.code,
+            "target": target,
+            "actual": sales,
+            "gap": gap,
+            "achievement_pct": achievement,
+            "commission": float(total_commission),
+            "badge": badge
+        })
+    
+    # Sort by actual sales descending
+    leaderboard.sort(key=lambda x: x["actual"], reverse=True)
+    for i, item in enumerate(leaderboard, 1):
+        item["rank"] = i
+    
+    # Team totals
+    team_target = sum(x["target"] for x in leaderboard)
+    team_actual = sum(x["actual"] for x in leaderboard)
+    
+    return {
+        "status": "success",
+        "period": f"{year}-{month:02d}",
+        "team_summary": {
+            "total_target": team_target,
+            "total_actual": team_actual,
+            "team_achievement_pct": round((team_actual / team_target * 100), 1) if team_target > 0 else 0,
+            "on_target_count": sum(1 for x in leaderboard if x["achievement_pct"] >= 100),
+            "total_salesmen": len(leaderboard)
+        },
+        "leaderboard": leaderboard
+    }

@@ -93,6 +93,81 @@ const menuItems = [
         ]
     },
     {
+        group: 'SALES',
+        items: [
+            {
+                path: '/sales',
+                label: 'Daftar Penawaran',
+                icon: (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+                    </svg>
+                )
+            },
+            {
+                path: '/sales/quotation/new',
+                label: 'Buat Penawaran',
+                icon: (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 5v14M5 12h14" />
+                    </svg>
+                )
+            },
+            {
+                path: '/sales/performance',
+                label: 'Performa Sales',
+                icon: (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 20V10M12 20V4M6 20v-6" />
+                    </svg>
+                )
+            },
+            {
+                path: '/sales/swap',
+                label: 'Tukar Guling',
+                icon: (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M4 14h6v6" />
+                        <path d="M20 10h-6V4" />
+                        <path d="M14 4l-4 4" />
+                        <path d="M10 20l4-4" />
+                    </svg>
+                )
+            },
+            {
+                path: '/sales/import',
+                label: 'Import History',
+                icon: (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                )
+            },
+            {
+                path: '/sales/crm',
+                label: 'CRM Leads',
+                icon: (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                )
+            },
+            {
+                path: '/sales/customers',
+                label: 'Data Customer',
+                icon: (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                )
+            }
+        ]
+    },
+    {
         group: 'ERP',
         items: [
             {
@@ -106,12 +181,42 @@ const menuItems = [
                 )
             },
             {
+                path: '/finance/general-ledger',
+                label: 'Buku Besar (GL)',
+                icon: (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                )
+            },
+            {
                 path: '/finance/hutang',
                 label: 'Hutang (AP)',
                 icon: (
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <rect x="1" y="4" width="22" height="16" rx="2" />
                         <path d="M1 10h22" />
+                    </svg>
+                )
+            },
+            {
+                path: '/purchasing/suppliers',
+                label: 'Manajemen Supplier',
+                icon: (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                )
+            },
+            {
+                path: '/purchasing/suggestions',
+                label: 'Smart Auto-Restock',
+                icon: (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                     </svg>
                 )
             },
@@ -155,7 +260,7 @@ const menuItems = [
             },
             {
                 path: '/finance/invoices',
-                label: 'Invoice',
+                label: 'Daftar Invoice',
                 icon: (
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
@@ -217,16 +322,7 @@ const menuItems = [
                     </svg>
                 )
             },
-            {
-                path: '/inventory/dashboard',
-                label: 'Super Dashboard',
-                icon: (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <path d="M3 9h18M9 21V9" />
-                    </svg>
-                )
-            },
+
             {
                 path: '/inventory/stock-card',
                 label: 'Kartu Stok',
@@ -300,51 +396,7 @@ const menuItems = [
             }
         ]
     },
-    {
-        group: 'SALES',
-        items: [
-            {
-                path: '/sales',
-                label: 'Daftar Penawaran',
-                icon: (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
-                    </svg>
-                )
-            },
-            {
-                path: '/sales/quotation/new',
-                label: 'Buat Penawaran',
-                icon: (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 5v14M5 12h14" />
-                    </svg>
-                )
-            },
-            {
-                path: '/sales/performance',
-                label: 'Performa Sales',
-                icon: (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M18 20V10M12 20V4M6 20v-6" />
-                    </svg>
-                )
-            },
-            {
-                path: '/sales/swap',
-                label: 'Tukar Guling',
-                icon: (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 14h6v6" />
-                        <path d="M20 10h-6V4" />
-                        <path d="M14 4l-4 4" />
-                        <path d="M10 20l4-4" />
-                    </svg>
-                )
-            }
-        ]
-    },
+
     {
         group: 'ADMIN',
         items: [
@@ -542,7 +594,12 @@ export default function Sidebar({ isCollapsed, onClose }) {
                                             title={item.label}
                                         >
                                             <span className="nav-icon">{item.icon}</span>
-                                            {!isCollapsed && <span className="nav-label">{item.label}</span>}
+                                            {!isCollapsed && (
+                                                <>
+                                                    <span className="nav-label">{item.label}</span>
+                                                    {item.badge && <span className="nav-badge">{item.badge}</span>}
+                                                </>
+                                            )}
                                         </NavLink>
                                     </li>
                                 ))}

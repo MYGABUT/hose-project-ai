@@ -2,11 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { getPendingQC, submitQCInspection } from '../../services/qcApi';
 import { FaCheck, FaTimes, FaSearch } from 'react-icons/fa';
-
-import React, { useState, useEffect } from 'react';
-import { getPendingQC, submitQCInspection } from '../../services/qcApi';
 import { useNotification } from '../../contexts/NotificationContext';
-import { FaCheck, FaTimes, FaSearch } from 'react-icons/fa';
 
 const QCPage = () => {
     const { addNotification } = useNotification();

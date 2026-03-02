@@ -8,7 +8,7 @@ import Button from '../../components/common/Button/Button';
 import StatusBadge from '../../components/common/Badge/StatusBadge';
 import './Production.css';
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_AI_API_URL || "";
 
 export default function JOProfitability() {
     const [loading, setLoading] = useState(true);

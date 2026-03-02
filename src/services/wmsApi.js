@@ -3,7 +3,9 @@
  * Connects frontend to WMS batch management system
  */
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
+import { getAuthHeader } from './api';
+
+const API_BASE_URL = import.meta.env.VITE_AI_API_URL || "";
 console.log(`🔌 WMS API initialized at: ${API_BASE_URL}`);
 
 /**
@@ -19,7 +21,9 @@ export async function getLocations(params = {}) {
         if (params.search) queryParams.append('search', params.search);
 
         const response = await fetch(
-            `${API_BASE_URL}/api/v1/locations?${queryParams.toString()}`
+            `${API_BASE_URL}/api/v1/locations?${queryParams.toString()}`, {
+            headers: { ...getAuthHeader() }
+        }
         );
 
         if (!response.ok) {
@@ -63,6 +67,7 @@ export async function receiveBatch(batchData) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...getAuthHeader()
             },
             body: JSON.stringify({
                 // Product identification
@@ -76,6 +81,15 @@ export async function receiveBatch(batchData) {
                 wire_type: batchData.wireType,
                 working_pressure_bar: batchData.workingPressureBar ? parseFloat(batchData.workingPressureBar) : null,
                 working_pressure_psi: batchData.workingPressurePsi ? parseFloat(batchData.workingPressurePsi) : null,
+
+                // Dynamic detailed specs
+                category: batchData.category,
+                thread_type: batchData.threadType,
+                thread_size: batchData.threadSize,
+                seal_type: batchData.sealType,
+                configuration: batchData.configuration,
+                is_cut_piece: batchData.isCutPiece,
+                cut_length_cm: batchData.cutLengthCm ? parseFloat(batchData.cutLengthCm) : null,
 
                 // Location
                 location_code: batchData.location || 'WH1-STAGING-IN',
@@ -91,7 +105,7 @@ export async function receiveBatch(batchData) {
 
                 // AI Scanner data
                 ai_confidence: batchData.confidence ? parseInt(batchData.confidence) : null,
-                ai_raw_text: batchData.notes,
+                ai_raw_text: batchData.aiRawText || batchData.notes, // Fallback to notes if aiRawText missing
 
                 // User
                 received_by: batchData.createdBy || 'system',
@@ -149,9 +163,13 @@ export async function getBatches(params = {}) {
         if (params.brand) queryParams.append('brand', params.brand);
         if (params.search) queryParams.append('search', params.search);
         if (params.available_only) queryParams.append('available_only', 'true');
+        if (params.owner_id) queryParams.append('owner_id', params.owner_id);
+        if (params.company_id) queryParams.append('company_id', params.company_id);
 
         const response = await fetch(
-            `${API_BASE_URL}/api/v1/batches?${queryParams.toString()}`
+            `${API_BASE_URL}/api/v1/batches?${queryParams.toString()}`, {
+            headers: { ...getAuthHeader() }
+        }
         );
 
         if (!response.ok) {
@@ -182,7 +200,9 @@ export async function getAvailableBatches(productId, minQty = 0) {
         queryParams.append('min_qty', minQty);
 
         const response = await fetch(
-            `${API_BASE_URL}/api/v1/batches/available?${queryParams.toString()}`
+            `${API_BASE_URL}/api/v1/batches/available?${queryParams.toString()}`, {
+            headers: { ...getAuthHeader() }
+        }
         );
 
         if (!response.ok) {
@@ -207,7 +227,9 @@ export async function getAvailableBatches(productId, minQty = 0) {
  */
 export async function getBatch(barcode) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/batches/${barcode}`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/batches/${barcode}`, {
+            headers: { ...getAuthHeader() }
+        });
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -236,6 +258,7 @@ export async function transferBatch(barcode, toLocationCode, quantity = null) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...getAuthHeader()
             },
             body: JSON.stringify({
                 to_location_code: toLocationCode,
@@ -271,6 +294,7 @@ export async function consumeBatch(barcode, quantity, reference = {}) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...getAuthHeader()
             },
             body: JSON.stringify({
                 quantity: quantity,
@@ -302,7 +326,9 @@ export async function consumeBatch(barcode, quantity, reference = {}) {
  */
 export async function getBatchMovements(barcode) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/batches/${barcode}/movements`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/batches/${barcode}/movements`, {
+            headers: { ...getAuthHeader() }
+        });
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -335,6 +361,7 @@ export async function uploadBatchImage(barcode, imageBlob) {
         const response = await fetch(`${API_BASE_URL}/api/v1/batches/${barcode}/image`, {
             method: 'POST',
             body: formData,
+            headers: { ...getAuthHeader() } // Don't set Content-Type for FormData
         });
 
         if (!response.ok) {
@@ -364,6 +391,7 @@ export async function updateBatchStatus(barcode, status, notes = '') {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
+                ...getAuthHeader()
             },
             body: JSON.stringify({
                 status: status,

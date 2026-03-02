@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { ROLES, ROLE_CONFIG } from './AuthContext';
 import { getUsers, createUser, updateUser as apiUpdateUser, deleteUser as apiDeleteUser } from '../services/userApi';
+import { useAuth } from './AuthContext';
 
 // User Context
 const UserContext = createContext(null);
@@ -20,10 +21,14 @@ export function UserProvider({ children }) {
     // Message states
     const [actionMessage, setActionMessage] = useState(null);
 
-    // Load users from API
+    // Load users from API only when authenticated
+    const { isAuthenticated } = useAuth();
+
     useEffect(() => {
-        loadUsers();
-    }, []);
+        if (isAuthenticated) {
+            loadUsers();
+        }
+    }, [isAuthenticated]);
 
     const loadUsers = async () => {
         setLoading(true);

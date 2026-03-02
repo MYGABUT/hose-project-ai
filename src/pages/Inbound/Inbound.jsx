@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card from '../../components/common/Card/Card';
 import Button from '../../components/common/Button/Button';
 import AlertBox from '../../components/common/Alert/AlertBox';
 import CameraScanner from '../../components/features/Scanner/CameraScanner';
-import AIHoseScanner from '../../components/features/Scanner/AIHoseScanner';
+// import AIHoseScanner from '../../components/features/Scanner/AIHoseScanner'; // Deprecated
 import HoseDataForm from '../../components/features/Scanner/HoseDataForm';
 import VerificationModal from '../../components/features/Scanner/VerificationModal';
 import BarcodeGenerator from '../../components/features/Scanner/BarcodeGenerator';
 import './Inbound.css';
 
-
-
 export default function Inbound() {
+    const navigate = useNavigate();
     const [showScanner, setShowScanner] = useState(false);
-    const [showAIScanner, setShowAIScanner] = useState(false);
+    // const [showAIScanner, setShowAIScanner] = useState(false); // Deprecated
     const [showDataForm, setShowDataForm] = useState(false);
     const [showVerification, setShowVerification] = useState(false);
     const [showBarcode, setShowBarcode] = useState(false);
@@ -35,10 +35,11 @@ export default function Inbound() {
             if (res.status === 'success') {
                 const mapped = res.data.map(b => ({
                     id: b.batch_number || b.barcode,
-                    brand: b.brand,
-                    type: b.standard || 'Hydraulic',
-                    size: b.size_inch || b.size_dn,
+                    brand: b.brand || b.product_brand,
+                    type: b.standard || b.product_category || 'Hydraulic',
+                    size: b.size_inch || b.size_dn || b.size,
                     length: b.current_qty || 0,
+                    location: b.location_code || '-',
                     time: new Date(b.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 }));
                 setRecentEntries(mapped);
@@ -54,28 +55,13 @@ export default function Inbound() {
         setShowVerification(true);
     };
 
-    // Handle AI Scanner detection result - NEW FLOW
-    const handleAIDetectionComplete = (detectionData) => {
-        console.log('🤖 AI Detection Result:', detectionData);
-        setAIDetectionData(detectionData);
-        setShowAIScanner(false);
-        setFormMode('ai');
-        setShowDataForm(true);  // Open form to complete data
-    };
-
-    // Handle form confirmation (from both AI and Manual entry)
     const handleFormConfirm = async (formData) => {
         console.log('📝 Form Data Confirmed:', formData);
-
-        // formData here is already the saved batch object from HoseDataForm
-        // We don't need to save it again.
-
         setGeneratedItem(formData);
         setShowDataForm(false);
         setShowBarcode(true);
     };
 
-    // Handle manual entry button
     const handleManualEntry = () => {
         setAIDetectionData({});  // Empty data
         setFormMode('manual');
@@ -93,6 +79,7 @@ export default function Inbound() {
         setGeneratedItem(null);
         setScanData(null);
         setAIDetectionData(null);
+        loadRecentEntries(); // Refresh list
     };
 
     return (
@@ -104,7 +91,7 @@ export default function Inbound() {
                 </div>
             </div>
 
-            {/* Scan CTA - THREE options */}
+            {/* Scan CTA */}
             <Card className="scan-cta-card">
                 <div className="scan-cta">
                     <div className="cta-illustration">
@@ -121,7 +108,7 @@ export default function Inbound() {
                         <Button
                             variant="primary"
                             size="xl"
-                            onClick={() => setShowAIScanner(true)}
+                            onClick={() => navigate('/inbound/scan')}
                             icon={<span>🤖</span>}
                         >
                             AI Scanner
@@ -152,7 +139,7 @@ export default function Inbound() {
                 <span className="badge-status">21 Brand Supported</span>
             </div>
 
-            {/* Workflow explanation - Updated */}
+            {/* Workflow explanation */}
             <div className="workflow-steps">
                 <div className="workflow-step">
                     <div className="step-number">1</div>
@@ -199,13 +186,6 @@ export default function Inbound() {
                 </div>
             </div>
 
-            {/* Quick Entry Option */}
-            <AlertBox variant="info">
-                <div className="manual-entry-alert">
-                    <span>💡 Tip: AI Scanner akan auto-fill data, Anda tinggal verifikasi dan lengkapi.</span>
-                </div>
-            </AlertBox>
-
             {/* Recent Entries */}
             <Card title="Barang Masuk Hari Ini" subtitle={`${recentEntries.length} item terdaftar`}>
                 <div className="recent-entries">
@@ -215,7 +195,7 @@ export default function Inbound() {
                             <div className="entry-info">
                                 <span className="entry-id">{item.id}</span>
                                 <span className="entry-spec">
-                                    {item.brand} {item.type} {item.size} • {item.length}m
+                                    {item.brand} {item.type} {item.size} • {item.length}m • 📍 {item.location}
                                 </span>
                             </div>
                             <Button variant="secondary" size="sm">
@@ -226,14 +206,7 @@ export default function Inbound() {
                 </div>
             </Card>
 
-            {/* AI Hose Scanner */}
-            <AIHoseScanner
-                isOpen={showAIScanner}
-                onClose={() => setShowAIScanner(false)}
-                onDetectionComplete={handleAIDetectionComplete}
-            />
-
-            {/* Hose Data Form - NEW! */}
+            {/* Hose Data Form - For Manual Entry */}
             <HoseDataForm
                 isOpen={showDataForm}
                 onClose={() => setShowDataForm(false)}
@@ -260,7 +233,7 @@ export default function Inbound() {
                 ocrData={scanData?.result?.ocr || {}}
             />
 
-            {/* Barcode Generator - Now handles Saving */}
+            {/* Barcode Generator */}
             <BarcodeGenerator
                 isOpen={showBarcode}
                 onClose={handleBarcodeClose}

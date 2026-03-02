@@ -44,6 +44,13 @@ class WarehouseTransfer(Base):
     # Status
     status = Column(String(20), default='DRAFT')  # DRAFT, APPROVED, IN_TRANSIT, RECEIVED, CANCELLED
     
+    # Type (Multi-Entity)
+    # INTERNAL: Moving my stock between my locations
+    # CONSIGNMENT_OUT: Titip Barang (My Stock -> Other Company Loc)
+    # CONSIGNMENT_RETURN: Tarik Barang (My Stock at Other Loc -> My Loc)
+    # SALES: Selling Stock (Ownership Transfer)
+    transfer_type = Column(String(20), default='INTERNAL')
+    
     # People
     requested_by = Column(String(100))
     approved_by = Column(String(100))

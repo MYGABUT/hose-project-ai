@@ -1,0 +1,254 @@
+/**
+ * HoseMaster ERP — Global Print Stylesheet
+ * Hides navigation chrome and optimizes layout for A4 paper
+ */
+
+/* ===== Screen-only "Print" button styling ===== */
+.print-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #1d4ed8;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.print-btn:hover {
+    background: #1e40af;
+}
+
+.print-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* ===== Print Document Container ===== */
+.print-document {
+    display: none;
+    /* Hidden on screen */
+}
+
+/* ===== @media print ===== */
+@media print {
+
+    /* Hide all UI chrome */
+    .sidebar,
+    .sidebar-wrapper,
+    .topbar,
+    .top-bar,
+    nav,
+    .print-btn,
+    .no-print,
+    button:not(.print-keep),
+    .modal-overlay,
+    .notification-container {
+        display: none !important;
+    }
+
+    /* Reset page layout */
+    body,
+    html {
+        background: white !important;
+        color: black !important;
+        margin: 0;
+        padding: 0;
+        font-size: 11pt;
+    }
+
+    .main-content,
+    .app-content,
+    .content-area {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Show the printable document */
+    .print-document {
+        display: block !important;
+        padding: 0;
+        margin: 0;
+    }
+
+    /* ===== Document Layout ===== */
+    .doc-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 3px solid #111;
+        padding-bottom: 16px;
+        margin-bottom: 20px;
+    }
+
+    .doc-header .company-info h2 {
+        margin: 0;
+        font-size: 18pt;
+        font-weight: 800;
+    }
+
+    .doc-header .company-info p {
+        margin: 2px 0;
+        font-size: 9pt;
+        color: #555;
+    }
+
+    .doc-header .doc-title {
+        text-align: right;
+    }
+
+    .doc-header .doc-title h1 {
+        margin: 0;
+        font-size: 16pt;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .doc-header .doc-title .doc-number {
+        font-family: 'Consolas', monospace;
+        font-size: 12pt;
+        color: #333;
+    }
+
+    .doc-header .doc-title .doc-date {
+        font-size: 9pt;
+        color: #666;
+    }
+
+    /* Customer / Billing info section */
+    .doc-parties {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        gap: 20px;
+    }
+
+    .doc-parties .party-box {
+        flex: 1;
+        border: 1px solid #ccc;
+        padding: 12px;
+        border-radius: 4px;
+    }
+
+    .doc-parties .party-box h4 {
+        margin: 0 0 6px;
+        font-size: 8pt;
+        text-transform: uppercase;
+        color: #888;
+        letter-spacing: 1px;
+    }
+
+    .doc-parties .party-box p {
+        margin: 2px 0;
+        font-size: 10pt;
+    }
+
+    /* Line items table */
+    .doc-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+    .doc-table th,
+    .doc-table td {
+        border: 1px solid #ccc;
+        padding: 6px 10px;
+        text-align: left;
+        font-size: 9pt;
+    }
+
+    .doc-table th {
+        background: #f3f3f3;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 8pt;
+        letter-spacing: 0.5px;
+    }
+
+    .doc-table td.num {
+        text-align: right;
+        font-family: 'Consolas', monospace;
+    }
+
+    .doc-table tfoot td {
+        font-weight: 700;
+        border-top: 2px solid #333;
+    }
+
+    /* Totals */
+    .doc-totals {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 30px;
+    }
+
+    .doc-totals table {
+        width: 280px;
+        border-collapse: collapse;
+    }
+
+    .doc-totals td {
+        padding: 4px 10px;
+        font-size: 10pt;
+    }
+
+    .doc-totals .grand-total td {
+        font-weight: 800;
+        font-size: 12pt;
+        border-top: 2px solid #333;
+    }
+
+    /* Footer & Signatures */
+    .doc-footer {
+        margin-top: 40px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .doc-footer .sig-box {
+        text-align: center;
+        width: 200px;
+    }
+
+    .doc-footer .sig-box .sig-line {
+        border-bottom: 1px solid #333;
+        height: 60px;
+        margin-bottom: 4px;
+    }
+
+    .doc-footer .sig-box p {
+        margin: 0;
+        font-size: 8pt;
+        color: #555;
+    }
+
+    .doc-notes {
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px dashed #ccc;
+        font-size: 9pt;
+        color: #555;
+    }
+
+    .doc-notes strong {
+        color: #333;
+    }
+
+    /* Page break helpers */
+    .page-break {
+        page-break-after: always;
+    }
+
+    /* A4 sizing */
+    @page {
+        size: A4;
+        margin: 15mm;
+    }
+}

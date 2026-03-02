@@ -1,2 +1,2 @@
 # Endpoints module
-from . import projects, assembly, sales_swap, traceability
+from . import projects, assembly, sales_swap, traceability, settings

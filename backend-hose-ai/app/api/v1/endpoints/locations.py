@@ -9,12 +9,15 @@ from typing import Optional, List
 from pydantic import BaseModel
 
 from app.core.database import get_db
+from app.core.helpers import get_enum_value
 from app.models import StorageLocation, LocationType
 from app.services.putaway import (
     get_putaway_suggestions,
     validate_putaway_scan,
     confirm_putaway
 )
+from app.models import Company
+from app.core.deps import get_current_company
 
 
 router = APIRouter(prefix="/locations", tags=["Storage Locations"])
@@ -172,7 +175,8 @@ async def get_location_tree(
 @router.post("/generate")
 async def generate_rack_slots(
     data: RackGenerateRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company)
 ):
     """
     🔧 Bulk generate multiple slots for a rack.
@@ -231,7 +235,8 @@ async def generate_rack_slots(
             capacity=data.max_capacity_per_slot,
             current_usage=0,
             description=f"Auto-generated slot {num}",
-            is_active=True
+            is_active=True,
+            company_id=current_company.id
         )
         db.add(slot)
         created.append(code)
@@ -405,7 +410,8 @@ async def get_rack_map(
             "rack": loc.rack,
             "level": loc.level,
             "bin": loc.bin,
-            "type": loc.type.value if loc.type else None,
+            "data": [get_enum_value(t) for t in LocationType],
+            "type": get_enum_value(loc.type) if loc.type else None,
             "capacity": capacity,
             "current_qty": round(total_qty, 2),
             "occupancy_pct": occupancy_pct,
@@ -493,7 +499,8 @@ async def get_location(code: str, db: Session = Depends(get_db)):
 @router.post("")
 async def create_location(
     data: LocationCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company)
 ):
     """➕ Create new storage location"""
     # Check if exists
@@ -518,7 +525,8 @@ async def create_location(
         bin=data.bin.upper() if data.bin else None,
         type=loc_type,
         capacity=data.capacity,
-        description=data.description
+        description=data.description,
+        company_id=current_company.id
     )
     
     db.add(location)

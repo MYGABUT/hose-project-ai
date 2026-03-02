@@ -51,6 +51,11 @@ class CreditLimitUpdate(BaseModel):
     credit_limit: float
 
 
+class BatchCustomerCreate(BaseModel):
+    """Batch create customers (Excel import)"""
+    customers: list[CustomerCreate]
+
+
 # ============ Endpoints ============
 
 @router.get("")
@@ -225,6 +230,57 @@ def create_customer(
         "status": "success",
         "message": f"Customer '{customer.name}' berhasil dibuat",
         "data": customer.to_dict()
+    }
+
+
+@router.post("/batch")
+def batch_create_customers(
+    data: BatchCustomerCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    📋 Batch create customers (Excel-style import)
+    
+    Skips duplicates, returns count of created vs skipped.
+    """
+    created = 0
+    skipped = 0
+    errors = []
+    
+    for item in data.customers:
+        if not item.name or not item.name.strip():
+            continue
+        
+        existing = db.query(Customer).filter(Customer.name == item.name.strip()).first()
+        if existing:
+            skipped += 1
+            continue
+        
+        try:
+            customer = Customer(
+                name=item.name.strip(),
+                phone=item.phone,
+                address=item.address,
+                email=item.email,
+                customer_type=item.customer_type,
+                price_level=item.price_level,
+                credit_limit=Decimal(item.credit_limit),
+                credit_term=item.credit_term,
+                notes=item.notes
+            )
+            db.add(customer)
+            created += 1
+        except Exception as e:
+            errors.append(f"{item.name}: {str(e)}")
+    
+    db.commit()
+    
+    return {
+        "status": "success",
+        "message": f"{created} customer dibuat, {skipped} sudah ada (skip)",
+        "created": created,
+        "skipped": skipped,
+        "errors": errors
     }
 
 

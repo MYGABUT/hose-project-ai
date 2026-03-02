@@ -7,7 +7,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
-from app.models.enums import ProductCategory, ProductUnit
+from app.models.enums import ProductCategory, ProductUnit, ProductForm
 
 
 class Product(Base):
@@ -53,6 +53,12 @@ class Product(Base):
         Enum(ProductUnit, native_enum=False),
         default=ProductUnit.METER,
         nullable=False
+    )
+    
+    # Physical form (Hydraulink Catalog)
+    form = Column(
+        Enum(ProductForm, native_enum=False),
+        nullable=True  # Nullable for backward compat with existing data
     )
     
     # Search keywords - indexed for fast search
@@ -156,6 +162,7 @@ class Product(Base):
             "brand": self.brand,
             "category": category_val,
             "unit": unit_val,
+            "form": self.form.value if self.form and hasattr(self.form, 'value') else None,
             "alt_unit": self.alt_unit,
             "conversion_factor": float(self.conversion_factor) if self.conversion_factor else None,
             "specifications": self.specifications,

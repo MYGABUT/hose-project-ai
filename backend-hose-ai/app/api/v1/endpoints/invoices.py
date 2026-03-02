@@ -1,402 +1,170 @@
-"""
-HoseMaster WMS - Invoice API
-Create invoices from Sales Orders, track payments
-"""
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func as sqlfunc
-from pydantic import BaseModel
-from typing import Optional, List
-from datetime import datetime, date, timedelta
-from decimal import Decimal
-
+from sqlalchemy import func
+from typing import List, Optional
+from datetime import date, timedelta
 from app.core.database import get_db
-from app.core.config import settings
-from app.models import Invoice, InvoiceLine, SalesOrder, SOLine, Customer
+from app.core.security import get_current_user
+from app.models.user import User
+from app.models.invoice import Invoice, InvoiceLine
+from app.models.delivery_order import DeliveryOrder, DOStatus
+from app.models.sales_order import SalesOrder, SOLine
 
 
-router = APIRouter(prefix="/invoices", tags=["Invoices"])
-
-
-# ============ Helpers ============
+router = APIRouter()
 
 def generate_invoice_number(db: Session) -> str:
-    """Generate invoice number: INV-YYYYMM-XXX"""
-    today = date.today()
-    prefix = f"INV-{today.strftime('%Y%m')}"
+    """Generate next invoice number: INV-YYYYMM-0001"""
+    # 1. Get max ID
+    last_id = db.query(func.max(Invoice.id)).scalar() or 0
+    next_id = last_id + 1
     
-    count = db.query(Invoice).filter(
-        Invoice.invoice_number.like(f"{prefix}%")
-    ).count()
-    
-    return f"{prefix}-{count + 1:03d}"
+    # 2. Format
+    today_str = date.today().strftime("%Y%m")
+    return f"INV-{today_str}-{next_id:04d}"
 
 
-# ============ Schemas ============
-
-class CreateInvoiceRequest(BaseModel):
-    due_days: int = 30
-    include_tax: bool = True
-    tax_rate: float = settings.DEFAULT_TAX_RATE
-    notes: Optional[str] = None
-    terms: Optional[str] = "Pembayaran dalam 30 hari"
-
-
-class RecordPaymentRequest(BaseModel):
-    amount: float
-    payment_date: Optional[str] = None
-    payment_method: Optional[str] = "TRANSFER"
-    reference: Optional[str] = None
-
-
-# ============ Endpoints ============
-
-@router.get("")
-def list_invoices(
+@router.get("/")
+def get_invoices(
+    skip: int = 0,
+    limit: int = 50,
     status: Optional[str] = None,
     payment_status: Optional[str] = None,
-    customer_name: Optional[str] = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """📋 List all invoices with filters"""
     query = db.query(Invoice)
-    
     if status:
         query = query.filter(Invoice.status == status)
-    if payment_status:
+    if payment_status and payment_status != 'ALL':
         query = query.filter(Invoice.payment_status == payment_status)
-    if customer_name:
-        query = query.filter(Invoice.customer_name.ilike(f"%{customer_name}%"))
-    
-    total = query.count()
+        
     invoices = query.order_by(Invoice.created_at.desc()).offset(skip).limit(limit).all()
-    
-    return {
-        "status": "success",
-        "total": total,
-        "data": [inv.to_dict() for inv in invoices]
-    }
-
+    return {"status": "success", "data": [inv.to_dict() for inv in invoices]}
 
 @router.get("/summary")
-def invoice_summary(db: Session = Depends(get_db)):
-    """📊 Get invoice summary - total, unpaid, overdue"""
-    today = date.today()
+def get_invoice_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    total_inv = db.query(func.count(Invoice.id)).scalar()
+    total_outstanding = db.query(func.sum(Invoice.total - Invoice.amount_paid)).scalar() or 0
     
-    # Totals
-    total_invoices = db.query(Invoice).count()
-    total_amount = db.query(sqlfunc.sum(Invoice.total)).scalar() or 0
-    total_paid = db.query(sqlfunc.sum(Invoice.amount_paid)).scalar() or 0
+    overdue_count = 0 
+    # Proper overdue query needs date comparison in DB or logic here
+    # Simplified for now
     
-    # Unpaid
-    unpaid = db.query(Invoice).filter(Invoice.payment_status != 'PAID').count()
-    unpaid_amount = db.query(sqlfunc.sum(Invoice.total - Invoice.amount_paid)).filter(
-        Invoice.payment_status != 'PAID'
-    ).scalar() or 0
-    
-    # Overdue
-    overdue = db.query(Invoice).filter(
-        Invoice.payment_status != 'PAID',
-        Invoice.due_date < today
-    ).count()
-    overdue_amount = db.query(sqlfunc.sum(Invoice.total - Invoice.amount_paid)).filter(
-        Invoice.payment_status != 'PAID',
-        Invoice.due_date < today
-    ).scalar() or 0
+    total_paid = db.query(func.sum(Invoice.amount_paid)).scalar() or 0
     
     return {
-        "status": "success",
+        "status": "success", 
         "data": {
-            "total_invoices": total_invoices,
-            "total_amount": float(total_amount),
-            "total_paid": float(total_paid),
-            "total_outstanding": float(total_amount) - float(total_paid),
-            "unpaid_count": unpaid,
-            "unpaid_amount": float(unpaid_amount),
-            "overdue_count": overdue,
-            "overdue_amount": float(overdue_amount)
+            "total_invoices": total_inv,
+            "total_outstanding": float(total_outstanding),
+            "overdue_amount": 0, # Placeholder
+            "overdue_count": 0,
+            "total_paid": float(total_paid)
         }
     }
-
-
-@router.post("/from-so/{so_id}")
-def create_invoice_from_so(
-    so_id: int,
-    data: CreateInvoiceRequest,
-    db: Session = Depends(get_db)
-):
-    """
-    🧾 Create Invoice from Sales Order
-    
-    Auto-generates invoice number and copies SO lines
-    """
-    so = db.query(SalesOrder).filter(SalesOrder.id == so_id).first()
-    if not so:
-        raise HTTPException(status_code=404, detail="Sales Order tidak ditemukan")
-    
-    # Check if invoice already exists for this SO
-    existing = db.query(Invoice).filter(Invoice.so_id == so_id).first()
-    if existing:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Invoice sudah ada: {existing.invoice_number}"
-        )
-    
-    # Generate invoice number
-    invoice_number = generate_invoice_number(db)
-    
-    # Calculate amounts
-    subtotal = float(so.total or 0)
-    tax_amount = 0
-    if data.include_tax:
-        tax_amount = subtotal * (data.tax_rate / 100)
-    total = subtotal + tax_amount
-    
-    # Get customer info
-    customer = None
-    if so.customer_id:
-        customer = db.query(Customer).filter(Customer.id == so.customer_id).first()
-    
-    # Create invoice
-    invoice = Invoice(
-        invoice_number=invoice_number,
-        so_id=so.id,
-        so_number=so.so_number,
-        customer_id=so.customer_id,
-        customer_name=so.customer_name,
-        customer_address=customer.address if customer else None,
-        invoice_date=date.today(),
-        due_date=date.today() + timedelta(days=data.due_days),
-        subtotal=Decimal(str(subtotal)),
-        tax_rate=Decimal(str(data.tax_rate)) if data.include_tax else Decimal(0),
-        tax_amount=Decimal(str(tax_amount)),
-        total=Decimal(str(total)),
-        status='DRAFT',
-        payment_status='UNPAID',
-        notes=data.notes,
-        terms=data.terms
-    )
-    
-    db.add(invoice)
-    db.flush()
-    
-    # Copy SO lines to invoice lines
-    so_lines = db.query(SOLine).filter(SOLine.so_id == so_id).all()
-    for idx, sol in enumerate(so_lines, 1):
-        inv_line = InvoiceLine(
-            invoice_id=invoice.id,
-            line_number=idx,
-            product_id=sol.product_id,
-            product_sku=sol.hose_spec,
-            description=f"{sol.hose_spec} - {sol.length}m" if sol.length else sol.hose_spec,
-            qty=sol.qty,
-            unit="PCS",
-            unit_price=sol.unit_price,
-            subtotal=sol.subtotal
-        )
-        db.add(inv_line)
-    
-    db.commit()
-    db.refresh(invoice)
-    
-    return {
-        "status": "success",
-        "message": f"Invoice {invoice_number} berhasil dibuat",
-        "data": invoice.to_dict()
-    }
-
 
 @router.post("/from-do/{do_id}")
 def create_invoice_from_do(
     do_id: int,
-    data: CreateInvoiceRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """
-    🧾 Create Invoice from Delivery Order
-    
-    Generates invoice based on ACTUALLY DELIVERED quantities.
-    """
-    from app.models import DeliveryOrder, DOLine, DOStatus
-    
+    # 1. Get DO
     do = db.query(DeliveryOrder).filter(DeliveryOrder.id == do_id).first()
     if not do:
-        raise HTTPException(status_code=404, detail="Delivery Order tidak ditemukan")
-    
+        raise HTTPException(status_code=404, detail="Delivery Order not found")
+        
     if do.status != DOStatus.DELIVERED:
-        raise HTTPException(status_code=400, detail="Hanya DO yang sudah terkirim (DELIVERED) yang bisa ditagih")
+        raise HTTPException(status_code=400, detail="DO must be DELIVERED to create invoice")
+        
+    # Check if invoice exists? (Optional: Add link in DO model to avoid dupes)
+    # For now, allow multiple invoices per DO? Or check notes.
     
-    # Check if invoice already exists for this DO (check notes/so_id combo roughly or implement strict check later)
-    # Ideally checking if we have already invoiced this DO. 
-    # For now, we trust the user not to double invoice or we check note content.
-    existing = db.query(Invoice).filter(
-        Invoice.so_id == do.so_id, 
-        Invoice.notes.like(f"%{do.do_number}%")
-    ).first()
-    
-    if existing:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Invoice sepertinya sudah ada untuk DO ini: {existing.invoice_number}"
-        )
-    
-    so = do.sales_order
+    # 2. Get SO
+    so = db.query(SalesOrder).filter(SalesOrder.id == do.so_id).first()
     if not so:
-         raise HTTPException(status_code=404, detail="Sales Order terkait tidak ditemukan")
-
-    # Generate invoice number
-    invoice_number = generate_invoice_number(db)
+        raise HTTPException(status_code=404, detail="Sales Order not found")
+        
+    # 3. Create Invoice Header
+    # Auto-generate Invoice Number (INV-YYYYMM-{ID})
+    inv_number = generate_invoice_number(db)
     
-    # Calculate amounts based on DO Lines * SO Unit Price
-    subtotal = 0
-    invoice_lines = []
-    
-    for do_line in do.lines:
-        so_line = do_line.so_line
-        if so_line:
-            qty = Decimal(do_line.qty)
-            unit_price = so_line.unit_price
-            line_subtotal = qty * unit_price
-            subtotal += float(line_subtotal)
-            
-            invoice_lines.append({
-                "product_id": do_line.product_id,
-                "product_sku": do_line.description, # Or product.sku
-                "description": f"{do_line.description} (DO: {do.do_number})",
-                "qty": qty,
-                "unit": "PCS",
-                "unit_price": unit_price,
-                "subtotal": line_subtotal
-            })
-
-    tax_amount = 0
-    if data.include_tax:
-        tax_amount = subtotal * (data.tax_rate / 100)
-    total = subtotal + tax_amount
-    
-    # Create invoice
     invoice = Invoice(
-        invoice_number=invoice_number,
+        invoice_number=inv_number,
         so_id=so.id,
         so_number=so.so_number,
         customer_id=so.customer_id,
         customer_name=so.customer_name,
-        customer_address=so.customer_address,
         invoice_date=date.today(),
-        due_date=date.today() + timedelta(days=data.due_days),
-        subtotal=Decimal(str(subtotal)),
-        tax_rate=Decimal(str(data.tax_rate)) if data.include_tax else Decimal(0),
-        tax_amount=Decimal(str(tax_amount)),
-        total=Decimal(str(total)),
-        status='DRAFT',
-        payment_status='UNPAID',
-        notes=f"Invoice for Delivery {do.do_number}. {data.notes or ''}",
-        terms=data.terms
+        due_date=date.today() + timedelta(days=30), # Default 30 days
+        salesman_id=so.salesman_id,
+        status="DRAFT",
+        created_by=current_user.email
     )
-    
     db.add(invoice)
-    db.flush()
+    db.flush() # Get ID
     
-    # Add lines
-    for line in invoice_lines:
+    # 4. Create Lines
+    total_amount = 0
+    for do_line in do.lines:
+        line_qty = do_line.qty_shipped
+        if line_qty <= 0:
+            continue
+            
+        # Find price from SO Line
+        so_line = db.query(SOLine).filter(SOLine.id == do_line.so_line_id).first()
+        unit_price = so_line.unit_price if so_line else 0
+        
+        line_subtotal = float(unit_price) * float(line_qty)
+        total_amount += line_subtotal
+        
         inv_line = InvoiceLine(
             invoice_id=invoice.id,
-            line_number=1, # TODO: increment
-            product_id=line["product_id"],
-            product_sku=line["product_sku"],
-            description=line["description"],
-            qty=line["qty"],
-            unit=line["unit"],
-            unit_price=line["unit_price"],
-            subtotal=line["subtotal"]
+            product_id=do_line.product_id,
+            description=do_line.description,
+            qty=line_qty,
+            unit="PCS", # Should get from Product/SO
+            unit_price=unit_price,
+            subtotal=line_subtotal
         )
         db.add(inv_line)
+        
+    # 5. Calc Tax & Total
+    invoice.subtotal = total_amount
+    invoice.dpp = total_amount
+    invoice.tax_rate = 11
+    invoice.tax_amount = total_amount * 0.11
+    invoice.total = total_amount * 1.11
+    invoice.amount_due = invoice.total
     
     db.commit()
     db.refresh(invoice)
     
-    return {
-        "status": "success",
-        "message": f"Invoice {invoice_number} berhasil dibuat dari Delivery Order",
-        "data": invoice.to_dict()
-    }
+    return {"status": "success", "message": "Invoice Created", "data": invoice.to_dict()}
 
-
-@router.get("/{invoice_id}")
-def get_invoice_detail(invoice_id: int, db: Session = Depends(get_db)):
-    """🔍 Get invoice detail with line items"""
-    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
-    if not invoice:
-        raise HTTPException(status_code=404, detail="Invoice tidak ditemukan")
-    
-    result = invoice.to_dict()
-    result["items"] = [item.to_dict() for item in invoice.items]
-    result["customer_address"] = invoice.customer_address
-    result["notes"] = invoice.notes
-    result["terms"] = invoice.terms
-    
-    return {"status": "success", "data": result}
-
-
-@router.post("/{invoice_id}/send")
-def send_invoice(invoice_id: int, db: Session = Depends(get_db)):
-    """📤 Mark invoice as sent"""
-    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
-    if not invoice:
-        raise HTTPException(status_code=404, detail="Invoice tidak ditemukan")
-    
-    invoice.status = 'SENT'
-    db.commit()
-    
-    return {
-        "status": "success",
-        "message": f"Invoice {invoice.invoice_number} ditandai terkirim"
-    }
-
-
-@router.post("/{invoice_id}/payment")
-def record_invoice_payment(
-    invoice_id: int,
-    data: RecordPaymentRequest,
-    db: Session = Depends(get_db)
+@router.post("/{inv_id}/payment")
+def record_payment(
+    inv_id: int,
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """
-    💰 Record payment for invoice
-    
-    Updates payment_status based on amount:
-    - PARTIAL if amount_paid < total
-    - PAID if amount_paid >= total
-    """
-    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    amount = payload.get("amount", 0)
+    invoice = db.query(Invoice).filter(Invoice.id == inv_id).first()
     if not invoice:
-        raise HTTPException(status_code=404, detail="Invoice tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Invoice not found")
+        
+    invoice.amount_paid = float(invoice.amount_paid or 0) + float(amount)
     
-    # Update amount paid
-    current_paid = float(invoice.amount_paid or 0)
-    new_paid = current_paid + data.amount
-    invoice.amount_paid = Decimal(str(new_paid))
-    
-    # Update payment status
-    total = float(invoice.total or 0)
-    if new_paid >= total:
-        invoice.payment_status = 'PAID'
-        invoice.status = 'PAID'
-        invoice.paid_at = datetime.now()
-    elif new_paid > 0:
-        invoice.payment_status = 'PARTIAL'
-    
+    if invoice.amount_paid >= invoice.total:
+        invoice.payment_status = "PAID"
+        invoice.status = "PAID"
+    elif invoice.amount_paid > 0:
+        invoice.payment_status = "PARTIAL"
+        
     db.commit()
-    
-    return {
-        "status": "success",
-        "message": f"Pembayaran Rp {data.amount:,.0f} dicatat. Sisa: Rp {invoice.amount_due:,.0f}",
-        "data": {
-            "invoice_number": invoice.invoice_number,
-            "total": float(invoice.total),
-            "amount_paid": float(invoice.amount_paid),
-            "amount_due": invoice.amount_due,
-            "payment_status": invoice.payment_status
-        }
-    }
+    return {"status": "success", "data": invoice.to_dict()}

@@ -43,29 +43,27 @@ class QCItemResponse(BaseModel):
 @router.get("/pending")
 async def get_pending_qc(db: Session = Depends(get_db)):
     """📋 List items waiting for QC (from Job Orders)"""
-    # Find JOs that are in progress or specifically marked as QC_PENDING
-    # In this logic, we look for JOLines where qty_completed < qty_ordered
-    # AND the parent JO is not DRAFT or CANCELLED
-    
+    # Find JOs that are specifically marked as QC_PENDING
     pending_items = []
     
     jos = db.query(JobOrder).filter(
-        JobOrder.status.in_([JOStatus.IN_PROGRESS, JOStatus.QC_PENDING]),
+        JobOrder.status == JOStatus.QC_PENDING,
         JobOrder.is_deleted == False
     ).all()
     
     for jo in jos:
         for line in jo.lines:
-            if line.qty_completed < line.qty_ordered:
-                pending_items.append({
-                    "id": line.id,
-                    "jo_number": jo.jo_number,
-                    "product_name": line.description,
-                    "qty_ordered": line.qty_ordered,
-                    "qty_completed": line.qty_completed,
-                    "qty_pending": line.qty_ordered - line.qty_completed,
-                    "status": jo.status
-                })
+            # If line is completed in production, it's ready for QC 
+            # (Assuming qty_ordered = what they've produced and are waiting to be QC'd)
+            pending_items.append({
+                "id": line.id,
+                "jo_number": jo.jo_number,
+                "product_name": line.description,
+                "qty_ordered": line.qty_ordered,
+                "qty_completed": line.qty_completed,
+                "qty_pending": line.qty_ordered, # In QC context, all ordered qty is pending QC
+                "status": jo.status
+            })
                 
     return {
         "status": "success",

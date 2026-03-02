@@ -4,6 +4,8 @@ import Button from '../../components/common/Button/Button';
 import AlertBox from '../../components/common/Alert/AlertBox';
 import StatusBadge from '../../components/common/Badge/StatusBadge';
 import CameraScanner from '../../components/features/Scanner/CameraScanner';
+import Input from '../../components/common/Input/Input';
+import Modal from '../../components/common/Modal/Modal';
 import {
     startOpname,
     getCurrentOpname,
@@ -23,8 +25,14 @@ export default function StockOpname() {
     const [opnameId, setOpnameId] = useState(null);
     const [loading, setLoading] = useState(true);
     const [scanHistory, setScanHistory] = useState([]);
+    const [isBlind, setIsBlind] = useState(false); // Blind Mode State
 
-    const scannedCount = items.filter(i => i.status === 'found').length;
+    // Qty Modal State
+    const [showQtyModal, setShowQtyModal] = useState(false);
+    const [tempBarcode, setTempBarcode] = useState('');
+    const [scanQty, setScanQty] = useState(1);
+
+    const scannedCount = items.filter(i => i.status === 'found' || i.status === 'mismatch').length;
     const missingCount = items.filter(i => i.status === 'missing').length;
     const totalItems = items.length;
     const progress = totalItems > 0 ? (scannedCount / totalItems) * 100 : 0;
@@ -39,6 +47,7 @@ export default function StockOpname() {
         if (res.status === 'success' && res.data) {
             setOpnameId(res.data.id);
             setIsOpnameMode(true);
+            setIsBlind(res.data.is_blind); // Restore blind state
             await loadItems(res.data.id);
         }
         setLoading(false);
@@ -53,8 +62,9 @@ export default function StockOpname() {
                 brand: item.brand,
                 name: item.name, // Product name
                 location: item.location,
-                status: item.status, // pending, found, missing
-                sysQty: item.system_qty
+                status: item.status, // pending, found, missing, mismatch
+                sysQty: item.system_qty,
+                actQty: item.actual_qty
             })));
         }
     };
@@ -69,7 +79,7 @@ export default function StockOpname() {
         }
 
         const description = `Opname ${scopeType} - ${new Date().toLocaleDateString('id-ID')}`;
-        const res = await startOpname(description, scopeType, scopeValue);
+        const res = await startOpname(description, scopeType, scopeValue, isBlind);
 
         if (res.status === 'success') {
             setOpnameId(res.data.id);
@@ -81,35 +91,44 @@ export default function StockOpname() {
         }
     };
 
-    const handleScanComplete = async (data) => {
+    const handleScanComplete = (data) => {
         setShowScanner(false);
         const scannedCode = data.result?.text || data.result?.barcode?.id;
-
         if (!scannedCode) return;
 
-        // Call API to scan
-        const res = await scanOpnameItem(opnameId, scannedCode);
+        setTempBarcode(scannedCode);
+        setScanQty(1); // Default to 1
+        setShowQtyModal(true); // Open Qty Input
+    };
+
+    const submitScan = async () => {
+        if (!tempBarcode) {
+            addNotification("Error", "Barcode wajib diisi", "error");
+            return;
+        }
+        if (scanQty <= 0) {
+            addNotification("Error", "Jumlah harus > 0", "error");
+            return;
+        }
+
+        setShowQtyModal(false);
+        const res = await scanOpnameItem(opnameId, tempBarcode, parseFloat(scanQty));
 
         if (res.status === 'success') {
             // Update local state
             setItems(prev => prev.map(item => {
-                if (item.barcode === scannedCode) {
-                    return { ...item, status: 'found' };
+                if (item.barcode === tempBarcode) {
+                    return { ...item, status: res.data.status, actQty: res.data.actual_qty };
                 }
                 return item;
             }));
 
             setScanHistory(prev => [
-                { id: scannedCode, time: new Date().toLocaleTimeString(), status: 'found' },
+                { id: tempBarcode, time: new Date().toLocaleTimeString(), status: res.data.status },
                 ...prev
             ]);
 
-            // Auto-open scanner
-            setTimeout(() => {
-                if (scannedCount < totalItems - 1) {
-                    setShowScanner(true);
-                }
-            }, 1000);
+            addNotification("Sukses", `Item ${tempBarcode} terverifikasi (Qty: ${scanQty})`, "success");
         } else {
             addNotification("Error", res.message, "error");
         }
@@ -136,6 +155,8 @@ export default function StockOpname() {
             setIsOpnameMode(false);
             setOpnameId(null);
             setItems([]);
+            // Redirect to report
+            // window.open(`/inventory/opname-report/${res.data.id}`, '_blank');
         } else {
             addNotification("Gagal", 'Gagal finalize: ' + res.message, "error");
         }
@@ -148,10 +169,21 @@ export default function StockOpname() {
             <div className="page-header">
                 <div>
                     <h1 className="page-title">Stock Opname</h1>
-                    <p className="page-subtitle">Audit stok fisik gudang</p>
+                    <p className="page-subtitle">Audit stok fisik gudang {isBlind ? '(Blind Mode)' : ''}</p>
                 </div>
                 {!isOpnameMode && (
                     <div className="opname-controls">
+                        <div className="control-group">
+                            <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'white', padding: '8px 12px', borderRadius: '6px', border: '1px solid #ddd' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={isBlind}
+                                    onChange={e => setIsBlind(e.target.checked)}
+                                />
+                                <span style={{ fontWeight: 500 }}>Blind Mode 🕵️</span>
+                            </label>
+                        </div>
+
                         <select
                             className="scope-select"
                             value={scopeType}
@@ -215,10 +247,10 @@ export default function StockOpname() {
                             <div className="intro-content">
                                 <h2>Cara Kerja Stock Opname</h2>
                                 <ol>
+                                    <li>Pilih Mode (Blind Mode disarankan untuk audit)</li>
                                     <li>Tekan tombol "Mulai Stock Opname"</li>
-                                    <li>Scan semua QR Code pada barang di gudang satu per satu</li>
-                                    <li>Sistem otomatis mencentang barang yang "Hadir"</li>
-                                    <li>Setelah selesai, sistem melaporkan barang yang hilang</li>
+                                    <li>Scan QR Code barang dan input jumlah fisik</li>
+                                    <li>Sistem akan mencatat selisih secara otomatis</li>
                                 </ol>
                             </div>
                         </div>
@@ -236,7 +268,7 @@ export default function StockOpname() {
                             <div className="progress-stats">
                                 <div className="stat-item found">
                                     <span className="stat-value">{scannedCount}</span>
-                                    <span className="stat-label">Ditemukan</span>
+                                    <span className="stat-label">Selesai</span>
                                 </div>
                                 <div className="stat-item missing">
                                     <span className="stat-value">{missingCount}</span>
@@ -267,6 +299,17 @@ export default function StockOpname() {
                                 >
                                     Scan Berikutnya
                                 </Button>
+                                <Button
+                                    variant="secondary"
+                                    size="lg"
+                                    onClick={() => {
+                                        setTempBarcode('');
+                                        setScanQty(1);
+                                        setShowQtyModal(true);
+                                    }}
+                                >
+                                    Input Manual
+                                </Button>
                                 <Button variant="success" onClick={handleFinishOpname}>
                                     Selesai
                                 </Button>
@@ -280,7 +323,7 @@ export default function StockOpname() {
                             {items.map((item) => (
                                 <div key={item.id} className={`opname-item status-${item.status}`}>
                                     <div className="item-check">
-                                        {item.status === 'found' && (
+                                        {(item.status === 'found' || item.status === 'mismatch') && (
                                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                                                 <path d="M20 6L9 17l-5-5" />
                                             </svg>
@@ -298,12 +341,19 @@ export default function StockOpname() {
                                     <div className="item-info">
                                         <span className="item-id">{item.barcode}</span>
                                         <span className="item-spec">{item.brand} {item.name}</span>
+                                        {item.actQty !== null && (
+                                            <span className="text-sm text-gray-600 block mt-1">
+                                                Count: <strong>{item.actQty}</strong>
+                                                {!isBlind && ` / Sys: ${item.sysQty}`}
+                                            </span>
+                                        )}
                                     </div>
                                     <div className="item-location">
                                         📍 {item.location}
                                     </div>
                                     <div className="item-status">
                                         {item.status === 'found' && <StatusBadge status="pass" size="sm" />}
+                                        {item.status === 'mismatch' && <StatusBadge status="warning" text="Mismatch" size="sm" />}
                                         {item.status === 'missing' && <StatusBadge status="fail" size="sm" />}
                                         {item.status === 'pending' && (
                                             <Button
@@ -343,6 +393,36 @@ export default function StockOpname() {
                 scanMode="qr"
                 title="Scan QR Code Barang"
             />
+
+            {/* Qty Input Modal */}
+            <Modal
+                isOpen={showQtyModal}
+                onClose={() => setShowQtyModal(false)}
+                title="Input Jumlah Fisik"
+            >
+                <div className="p-4">
+                    <div className="mb-4">
+                        <Input
+                            label="Barcode / ID Barang"
+                            value={tempBarcode}
+                            onChange={(e) => setTempBarcode(e.target.value.toUpperCase())}
+                            placeholder="e.g. BATCH-2023..."
+                            autoFocus
+                        />
+                    </div>
+                    <Input
+                        label="Jumlah Fisik (Actual Qty)"
+                        type="number"
+                        value={scanQty}
+                        onChange={e => setScanQty(e.target.value)}
+                        autoFocus
+                    />
+                    <div className="flex justify-end gap-2 mt-4">
+                        <Button variant="secondary" onClick={() => setShowQtyModal(false)}>Batal</Button>
+                        <Button variant="primary" onClick={submitScan}>Simpan</Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

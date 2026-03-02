@@ -228,3 +228,21 @@
     font-weight: var(--font-weight-semibold);
     margin-right: var(--spacing-2);
 }
+
+/* Status Mappings */
+.result-status.status-available,
+.result-status.status-active {
+    background-color: var(--color-success-light);
+    color: var(--color-success-dark);
+}
+
+.result-status.status-consumed,
+.result-status.status-inactive {
+    background-color: var(--color-error-light);
+    color: var(--color-error-dark);
+}
+
+.result-status.status-reserved {
+    background-color: var(--color-warning-light);
+    color: var(--color-warning-dark);
+}

@@ -34,10 +34,15 @@ export default function ProductLoanPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const data = await loanApi.getAll();
-            if (data) setLoans(data || []);
+            const response = await loanApi.getAll();
+            if (response.status === 'success') {
+                setLoans(response.data || []);
+            } else {
+                setLoans([]); // Fail safe
+            }
         } catch (err) {
             console.error('Error loading loans:', err);
+            setLoans([]);
         }
         setLoading(false);
     };

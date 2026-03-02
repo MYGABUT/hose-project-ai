@@ -115,10 +115,8 @@ export default function BarcodeGenerator({
                 setSaveSuccess(true);
                 if (onSaved) onSaved();
 
-                // Auto-close after 2 seconds
-                setTimeout(() => {
-                    handleClose();
-                }, 2000);
+                // Do not auto-close so user has time to print the barcode
+                // They can close it manually using the X button
             } else {
                 setSaveError(result.message || 'Gagal menyimpan data');
             }

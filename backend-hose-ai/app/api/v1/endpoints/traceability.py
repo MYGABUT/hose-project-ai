@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.helpers import get_enum_value
 from app.models import SalesOrder, JobOrder, PurchaseRequest, PurchaseOrder, InventoryBatch, BatchMovement, MovementType
 
 router = APIRouter(prefix="/traceability", tags=["Analytics - Traceability"])
@@ -104,7 +105,7 @@ def get_batch_traceability(batch_id: int, db: Session = Depends(get_db)):
     for move in sorted(movements, key=lambda x: x.performed_at if x.performed_at else datetime.min):
         history.append({
             "date": move.performed_at.isoformat() if move.performed_at else None,
-            "type": move.movement_type.value if hasattr(move.movement_type, 'value') else str(move.movement_type),
+            "type": get_enum_value(move.movement_type),
             "qty": move.qty,
             "from": move.from_location.code if move.from_location else "External/System",
             "to": move.to_location.code if move.to_location else "External/Consumption",
@@ -134,5 +135,109 @@ def get_batch_traceability(batch_id: int, db: Session = Depends(get_db)):
             "origin": origin,
             "history": history,
             "current_status": status
+        }
+    }
+
+@router.get("/document-flow/{entity_type}/{entity_id}")
+def get_document_flow(entity_type: str, entity_id: int, db: Session = Depends(get_db)):
+    """
+    🌐 Visual Relationship Map (SAP B1 Style)
+    Retrieves the lineage of a document: 
+    Quotation -> Sales Order -> (Job Order) -> Delivery Order -> Invoice -> Payment
+    """
+    nodes = []
+    edges = []
+    
+    # Helper to add node safely
+    def add_node(n_id, n_type, n_label, n_status, amount=None, date=None):
+        import datetime
+        dt = date.isoformat() if isinstance(date, datetime.date) or isinstance(date, datetime.datetime) else date
+        if not any(n['id'] == n_id for n in nodes):
+            nodes.append({
+                "id": n_id,
+                "type": n_type,
+                "label": n_label,
+                "status": n_status,
+                "amount": amount,
+                "date": dt
+            })
+            
+    def add_edge(src, tgt):
+        if not any(e['source'] == src and e['target'] == tgt for e in edges):
+            edges.append({"source": src, "target": tgt})
+
+    so = None
+    
+    # Resolve the anchor entity
+    if entity_type.upper() == 'SO':
+        so = db.query(SalesOrder).filter(SalesOrder.id == entity_id).first()
+    elif entity_type.upper() == 'JO':
+        jo = db.query(JobOrder).filter(JobOrder.id == entity_id).first()
+        if jo and jo.sales_order_id:
+            so = db.query(SalesOrder).filter(SalesOrder.id == jo.sales_order_id).first()
+    # If other types clicked (DO, INV), we could resolve back to SO, but for now we assume entry is predominantly SO.
+
+    if not so:
+        raise HTTPException(status_code=404, detail=f"Base Sales Order not found for trace")
+
+    # 1. Base Node (Sales Order)
+    so_node_id = f"SO-{so.id}"
+    add_node(so_node_id, "SalesOrder", so.so_number, so.status.value if so.status else "UNKNOWN", float(so.total_amount), so.order_date)
+
+    # 2. Upstream: Quotation
+    # Need to check models for direct linkage. Assuming quotation_id on SO if it exists.
+    # We will use raw SQL for generic flexibility across potentially loosely coupled tables
+    from sqlalchemy import text
+    
+    try:
+        quo_res = db.execute(text("SELECT id, quotation_number, status, total_amount, quotation_date FROM quotations WHERE id = (SELECT quotation_id FROM sales_orders WHERE id = :sid LIMIT 1)"), {"sid": so.id}).fetchone()
+        if quo_res:
+            quo_node_id = f"QT-{quo_res.id}"
+            add_node(quo_node_id, "Quotation", quo_res.quotation_number, quo_res.status, float(quo_res.total_amount), quo_res.quotation_date)
+            add_edge(quo_node_id, so_node_id)
+    except Exception as e:
+        pass # Quotation table might not exist or link might be different
+
+    # 3. Downstream: Job Orders
+    jo_res = db.execute(text("SELECT id, jo_number, status, due_date FROM job_orders WHERE sales_order_id = :sid"), {"sid": so.id}).fetchall()
+    for j in jo_res:
+        jo_id = f"JO-{j.id}"
+        add_node(jo_id, "JobOrder", j.jo_number, j.status, None, j.due_date)
+        add_edge(so_node_id, jo_id)
+
+    # 4. Downstream: Delivery Orders (often linked to SO or JO)
+    do_res = db.execute(text("SELECT id, do_number, status, delivery_date FROM delivery_orders WHERE sales_order_id = :sid"), {"sid": so.id}).fetchall()
+    for d in do_res:
+        do_id = f"DO-{d.id}"
+        add_node(do_id, "DeliveryOrder", d.do_number, d.status, None, d.delivery_date)
+        add_edge(so_node_id, do_id)
+        
+        # Delivery Order might spawn Invoices technically, or SO does. 
+
+    # 5. Downstream: Invoices
+    inv_res = db.execute(text("SELECT id, invoice_number, status, total_amount, invoice_date FROM invoices WHERE sales_order_id = :sid"), {"sid": so.id}).fetchall()
+    for i in inv_res:
+        inv_id = f"INV-{i.id}"
+        add_node(inv_id, "Invoice", i.invoice_number, i.status, float(i.total_amount), i.invoice_date)
+        
+        # Link Invoice from DO if available, else SO
+        # For simplicity in this graph logic, we link from SO
+        add_edge(so_node_id, inv_id)
+        
+        # 6. Downstream: Payments linked to Invoice
+        try:
+            pay_res = db.execute(text("SELECT id, payment_number, status, amount, payment_date FROM payments WHERE invoice_id = :iid"), {"iid": i.id}).fetchall()
+            for p in pay_res:
+                pay_id = f"PAY-{p.id}"
+                add_node(pay_id, "Payment", p.payment_number, p.status, float(p.amount), p.payment_date)
+                add_edge(inv_id, pay_id)
+        except Exception as e:
+            pass # Payments table might be named differently
+
+    return {
+        "status": "success",
+        "data": {
+            "nodes": nodes,
+            "edges": edges
         }
     }

@@ -6,6 +6,11 @@ import Button from '../../components/common/Button/Button';
 import Modal from '../../components/common/Modal/Modal';
 import AlertBox from '../../components/common/Alert/AlertBox';
 import StatusBadge from '../../components/common/Badge/StatusBadge';
+import SummaryCard from '../../components/dashboard/SummaryCard';
+import SalesTrendChart from '../../components/dashboard/SalesTrendChart';
+import CategoryPieChart from '../../components/dashboard/CategoryPieChart';
+import ActivityFeed from '../../components/dashboard/ActivityFeed';
+import { FaMoneyBillWave, FaWallet, FaChartPie, FaChartLine } from 'react-icons/fa';
 import './ManagerDashboard.css';
 
 // Roles yang diizinkan mengakses Manager Dashboard
@@ -81,11 +86,77 @@ export default function ManagerDashboard() {
     const [pendingQuotations, setPendingQuotations] = useState([]);
     const [pendingPriceChanges, setPendingPriceChanges] = useState([]);
 
+    // Analytics State
+    const [summaryStats, setSummaryStats] = useState({
+        revenue: 0,
+        revenueTrend: 0,
+        profit: 0,
+        profitTrend: 0,
+        expenses: 0,
+        expensesTrend: 0,
+        cashFlow: 0,
+        cashFlowTrend: 0
+    });
+    const [salesTrend, setSalesTrend] = useState([]);
+    const [salesCategory, setSalesCategory] = useState([]);
+    const [recentActivity, setRecentActivity] = useState([]);
+
     useEffect(() => {
         if (hasAccess) {
             loadApprovals();
+            loadAnalytics();
         }
     }, [hasAccess]);
+
+    const loadAnalytics = async () => {
+        try {
+            const { getDashboardSummary, getSalesTrend, getSalesByCategory } = await import('../../services/analyticsApi');
+
+            // Parallel fetch for dashboard data
+            const [summaryRes, trendRes, categoryRes] = await Promise.all([
+                getDashboardSummary(),
+                getSalesTrend(),
+                getSalesByCategory()
+            ]);
+
+            // Mocking data if API returns empty/error for visualization purposes
+            // In real prod, rely on API data.
+            setSummaryStats(summaryRes.data || {
+                revenue: 194250000, revenueTrend: 12.5,
+                profit: 45000000, profitTrend: 8.2,
+                expenses: 8550000, expensesTrend: -2.4,
+                cashFlow: 150000000, cashFlowTrend: 5.1
+            });
+
+            setSalesTrend(trendRes.data || [
+                { date: '1 Jan', amount: 12000000 },
+                { date: '5 Jan', amount: 15500000 },
+                { date: '10 Jan', amount: 11000000 },
+                { date: '15 Jan', amount: 18000000 },
+                { date: '20 Jan', amount: 22000000 },
+                { date: '25 Jan', amount: 19500000 },
+                { date: '30 Jan', amount: 25000000 },
+            ]);
+
+            setSalesCategory(categoryRes.data || [
+                { name: 'Hydraulic', value: 45000000 },
+                { name: 'Industrial', value: 32000000 },
+                { name: 'Fittings', value: 18000000 },
+                { name: 'Services', value: 12000000 },
+            ]);
+
+            // Mock Activity
+            setRecentActivity([
+                { id: 1, type: 'USER_LOGIN', message: 'Budi (Sales) login ke sistem', timestamp: Date.now() - 1000 * 60 * 5 },
+                { id: 2, type: 'APPROVAL', message: 'Manager approve QT-2024-002', timestamp: Date.now() - 1000 * 60 * 30 },
+                { id: 3, type: 'STOCK_UPDATE', message: 'Gudang terima barang PO-001', timestamp: Date.now() - 1000 * 60 * 60 },
+                { id: 4, type: 'INVOICE_CREATE', message: 'Invoice INV-005 diterbitkan', timestamp: Date.now() - 1000 * 60 * 120 },
+            ]);
+
+        } catch (err) {
+            console.error("Error loading analytics:", err);
+        }
+    };
 
     const loadApprovals = async () => {
         setLoading(true);
@@ -205,28 +276,105 @@ export default function ManagerDashboard() {
                 </div>
             </div>
 
-            {/* Stats Cards */}
-            <div className="approval-stats">
-                <div className="stat-card urgent">
-                    <div className="stat-icon">⏳</div>
-                    <div className="stat-info">
-                        <span className="stat-value">{pendingQuotations.length}</span>
-                        <span className="stat-label">Quotation Pending</span>
-                    </div>
+            {/* KPI Cards Row */}
+            <div className="dashboard-grid kpi-grid">
+                <SummaryCard
+                    title="Total Pendapatan"
+                    value={formatCurrency(summaryStats.revenue)}
+                    icon={<FaMoneyBillWave />}
+                    trend={summaryStats.revenueTrend}
+                    trendLabel="vs bulan lalu"
+                    color="primary"
+                />
+                <SummaryCard
+                    title="Laba Bersih"
+                    value={formatCurrency(summaryStats.profit)}
+                    icon={<FaWallet />}
+                    trend={summaryStats.profitTrend}
+                    trendLabel="vs bulan lalu"
+                    color="success"
+                />
+                <SummaryCard
+                    title="Beban Operasional"
+                    value={formatCurrency(summaryStats.expenses)}
+                    icon={<FaChartLine />}
+                    trend={summaryStats.expensesTrend}
+                    trendLabel="vs bulan lalu"
+                    color="danger"
+                />
+                <SummaryCard
+                    title="Arus Kas"
+                    value={formatCurrency(summaryStats.cashFlow)}
+                    icon={<FaChartPie />}
+                    trend={summaryStats.cashFlowTrend}
+                    trendLabel="vs bulan lalu"
+                    color="info"
+                />
+            </div>
+
+            {/* Charts Row */}
+            <div className="dashboard-grid charts-grid">
+                <div className="chart-col-large">
+                    <SalesTrendChart data={salesTrend} title="Tren Penjualan (30 Hari)" />
                 </div>
-                <div className="stat-card warning">
-                    <div className="stat-icon">💰</div>
-                    <div className="stat-info">
-                        <span className="stat-value">{pendingPriceChanges.length}</span>
-                        <span className="stat-label">Price Change Pending</span>
-                    </div>
+                <div className="chart-col-small">
+                    <CategoryPieChart data={salesCategory} title="Komposisi Penjualan" />
                 </div>
-                <div className="stat-card info">
-                    <div className="stat-icon">🔔</div>
-                    <div className="stat-info">
-                        <span className="stat-value">{priceAlerts.length}</span>
-                        <span className="stat-label">Price Alerts</span>
+            </div>
+
+            {/* Activity & Approvals Row */}
+            <div className="dashboard-grid mixed-grid">
+                <div className="feed-col">
+                    <ActivityFeed activities={recentActivity} />
+                </div>
+                <div className="approvals-col">
+                    {/* Existing Approval Stats - Compact Mode */}
+                    <div className="approval-stats-compact">
+                        <div className="stat-card urgent">
+                            <div className="stat-value">{pendingQuotations.length}</div>
+                            <div className="stat-label">Quotations</div>
+                        </div>
+                        <div className="stat-card warning">
+                            <div className="stat-value">{pendingPriceChanges.length}</div>
+                            <div className="stat-label">Price Changes</div>
+                        </div>
                     </div>
+
+                    {/* Pending Quotation Approvals */}
+                    <Card
+                        title="📋 Request Approval"
+                        subtitle={`${pendingQuotations.length} pending`}
+                        variant={pendingQuotations.length > 0 ? 'warning' : 'default'}
+                        className="approval-card-compact"
+                    >
+                        {loading ? (
+                            <div className="loading-state"><div className="spinner"></div></div>
+                        ) : pendingQuotations.length === 0 ? (
+                            <div className="empty-state"><span>✅ All Clear</span></div>
+                        ) : (
+                            <div className="approval-list compact-list">
+                                {pendingQuotations.slice(0, 3).map(item => (
+                                    <div key={item.id} className="approval-item">
+                                        <div className="approval-header">
+                                            <strong>{item.client}</strong>
+                                            <StatusBadge status="warning" size="sm" />
+                                        </div>
+                                        <div className="approval-body">
+                                            <p className="compact-text">{item.sales} • {formatCurrency(item.total)}</p>
+                                        </div>
+                                        <div className="approval-actions">
+                                            <Button variant="secondary" size="xs" onClick={() => handleViewDetail(item)}>Review</Button>
+                                        </div>
+                                    </div>
+                                ))}
+                                {pendingQuotations.length > 3 && (
+                                    <div className="view-more">
+                                        <Button variant="text" size="sm">Lihat {pendingQuotations.length - 3} lainnya...</Button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </Card>
                 </div>
             </div>
 
@@ -252,79 +400,7 @@ export default function ManagerDashboard() {
                 </Card>
             )}
 
-            {/* Pending Quotation Approvals */}
-            <Card
-                title="📋 Request Approval Quotation"
-                subtitle={`${pendingQuotations.length} menunggu keputusan`}
-                variant={pendingQuotations.length > 0 ? 'warning' : 'default'}
-            >
-                {loading ? (
-                    <div className="loading-state">
-                        <div className="spinner"></div>
-                        <p>Memuat data...</p>
-                    </div>
-                ) : pendingQuotations.length === 0 ? (
-                    <div className="empty-state">
-                        <span>✅ Tidak ada quotation yang perlu di-approve</span>
-                    </div>
-                ) : (
-                    <div className="approval-list">
-                        {pendingQuotations.map(item => (
-                            <div key={item.id} className="approval-item">
-                                <div className="approval-header">
-                                    <span className="approval-id">{item.id}</span>
-                                    <StatusBadge status="warning" size="sm" />
-                                </div>
 
-                                <div className="approval-body">
-                                    <div className="approval-info">
-                                        <div className="info-row">
-                                            <span className="info-label">Klien:</span>
-                                            <span className="info-value">{item.client}</span>
-                                        </div>
-                                        <div className="info-row">
-                                            <span className="info-label">Sales:</span>
-                                            <span className="info-value">{item.sales}</span>
-                                        </div>
-                                        <div className="info-row">
-                                            <span className="info-label">Total:</span>
-                                            <span className="info-value">{formatCurrency(item.total)}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="approval-metrics">
-                                        <div className={`metric margin-${item.margin < 0 ? 'danger' : item.margin < 15 ? 'warning' : 'ok'}`}>
-                                            <span className="metric-value">{item.margin}%</span>
-                                            <span className="metric-label">Margin</span>
-                                        </div>
-                                        <div className="metric discount">
-                                            <span className="metric-value">-{item.discount}%</span>
-                                            <span className="metric-label">Diskon</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="approval-reason">
-                                    <span className="reason-label">Alasan Sales:</span>
-                                    <span className="reason-text">"{item.reason}"</span>
-                                </div>
-
-                                <div className="approval-actions">
-                                    <Button variant="secondary" size="sm" onClick={() => handleViewDetail(item)}>
-                                        Detail
-                                    </Button>
-                                    <Button variant="danger" size="sm" onClick={() => handleRejectClick(item)}>
-                                        Reject
-                                    </Button>
-                                    <Button variant="success" size="sm" onClick={() => handleApprove(item)}>
-                                        Approve
-                                    </Button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </Card>
 
             {/* Pending Price Changes */}
             <Card

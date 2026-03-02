@@ -150,6 +150,16 @@ def update_rma_ticket(
     db.commit()
     db.refresh(ticket)
     
+    # 🔗 INTEGRATION: Feed RMA data to CAPA dashboard + trace serial number
+    try:
+        from app.services.integration import on_rma_inspected, on_rma_closed
+        if data.rootCause:
+            on_rma_inspected(db, ticket_id, data.rootCause)
+        if ticket.status == "closed":
+            on_rma_closed(db, ticket_id, ticket.solution or "unknown")
+    except Exception:
+        pass  # Non-blocking
+    
     return {
         "status": "success",
         "message": "Tiket berhasil diupdate",

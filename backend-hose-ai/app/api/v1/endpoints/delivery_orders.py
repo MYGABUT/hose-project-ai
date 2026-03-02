@@ -11,6 +11,7 @@ from datetime import datetime
 import uuid
 
 from app.core.database import get_db
+from app.core.helpers import get_enum_value
 from app.models import (
     DeliveryOrder, DOLine,
     SalesOrder, SOLine, JobOrder,
@@ -54,6 +55,15 @@ class DOUpdate(BaseModel):
     driver_name: Optional[str] = None
     vehicle_no: Optional[str] = None
     notes: Optional[str] = None
+
+class DOPickItem(BaseModel):
+    product_id: int
+    batch_id: int
+    qty: float
+
+class DOCompleteRequest(BaseModel):
+    """Payload for completing a Delivery Order with optional explicit batch deduction"""
+    picked_batches: Optional[List[DOPickItem]] = None
 
 
 # ============ Helper Functions ============
@@ -418,12 +428,15 @@ import traceback
 @router.post("/{do_id}/complete")
 async def complete_delivery_order(
     do_id: int,
+    data: Optional[DOCompleteRequest] = None,
     db: Session = Depends(get_db)
 ):
     """
     Complete DO - updates inventory.
     
     Updates SO line shipped quantities and deducts from inventory.
+    If 'picked_batches' is provided, it specifically deducts from those batches.
+    Otherwise, it falls back to FIFO deduction for legacy web-app support.
     """
     try:
         from app.models import InventoryBatch, BatchStatus
@@ -440,50 +453,107 @@ async def complete_delivery_order(
         
         # Update SO Line shipped qty and deduct from inventory
         batches_deducted = []
+        
+        # Prepare lookup if specific batches were picked via scanner
+        picked_batches_lookup = {}
+        if data and data.picked_batches:
+            for pb in data.picked_batches:
+                if pb.product_id not in picked_batches_lookup:
+                    picked_batches_lookup[pb.product_id] = []
+                picked_batches_lookup[pb.product_id].append({"batch_id": pb.batch_id, "qty": pb.qty})
+
         for do_line in do.lines:
             if do_line.so_line:
                 do_line.so_line.qty_shipped = (do_line.so_line.qty_shipped or 0) + (do_line.qty_shipped or 0)
                 
-                # Deduct from inventory batch (FIFO - oldest first)
                 qty_to_deduct = do_line.qty_shipped
-                batches = db.query(InventoryBatch).filter(
-                    InventoryBatch.product_id == do_line.so_line.product_id,
-                    InventoryBatch.current_qty > 0,
-                    InventoryBatch.status == BatchStatus.AVAILABLE.value
-                ).order_by(InventoryBatch.created_at).all()
+                specific_picks = picked_batches_lookup.get(do_line.so_line.product_id, [])
                 
-                for batch in batches:
-                    if qty_to_deduct <= 0:
-                        break
-                    deduct = min(batch.current_qty, qty_to_deduct)
+                # 1. First, attempt to deduct from explicit picked batches
+                if specific_picks:
+                    for pick in specific_picks:
+                        if qty_to_deduct <= 0: break
+                        if pick["qty"] <= 0: continue
+                        
+                        batch = db.query(InventoryBatch).filter(
+                            InventoryBatch.id == pick["batch_id"],
+                            InventoryBatch.current_qty > 0
+                        ).first()
+                        
+                        if not batch: continue
+                        
+                        deduct = min(batch.current_qty, pick["qty"], qty_to_deduct)
+                        if deduct <= 0: continue
+                        
+                        qty_before = batch.current_qty
+                        batch.current_qty -= deduct
+                        qty_to_deduct -= deduct
+                        pick["qty"] -= deduct
+                        
+                        if batch.current_qty == 0:
+                            batch.status = BatchStatus.CONSUMED.value
+                            
+                        batches_deducted.append({
+                            "batch": batch.batch_number,
+                            "deducted": deduct,
+                            "type": "EXPLICIT_PICK"
+                        })
+                        
+                        log_movement(
+                            db=db,
+                            batch_id=batch.id,
+                            movement_type=MovementType.OUTBOUND,
+                            qty=deduct,
+                            qty_before=qty_before,
+                            qty_after=batch.current_qty,
+                            from_location_id=batch.location_id,
+                            reference_type="DO",
+                            reference_id=do.id,
+                            reference_number=do.do_number,
+                            performed_by="system", # TODO: User ID
+                            reason="Order Fulfillment (Scanned)"
+                        )
+
+                # 2. Fallback to FIFO for any remaining qty not explicitly picked
+                if qty_to_deduct > 0:
+                    batches = db.query(InventoryBatch).filter(
+                        InventoryBatch.product_id == do_line.so_line.product_id,
+                        InventoryBatch.current_qty > 0,
+                        InventoryBatch.status == get_enum_value(BatchStatus.AVAILABLE)
+                    ).order_by(InventoryBatch.created_at).all()
                     
-                    qty_before = batch.current_qty # Capture qty before deduction
-                    
-                    batch.current_qty -= deduct
-                    qty_to_deduct -= deduct
-                    if batch.current_qty == 0:
-                        batch.status = BatchStatus.CONSUMED.value
-                    
-                    batches_deducted.append({
-                        "batch": batch.batch_number,
-                        "deducted": deduct
-                    })
-                    
-                    # Log movement
-                    log_movement(
-                        db=db,
-                        batch_id=batch.id,
-                        movement_type=MovementType.OUTBOUND,
-                        qty=deduct, # Log the actual deducted amount for this batch
-                        qty_before=qty_before,
-                        qty_after=batch.current_qty,
-                        from_location_id=batch.location_id,
-                        reference_type="DO",
-                        reference_id=do.id,
-                        reference_number=do.do_number,
-                        performed_by="system", # TODO: User ID
-                        reason="Order Fulfillment"
-                    )
+                    for batch in batches:
+                        if qty_to_deduct <= 0:
+                            break
+                        deduct = min(batch.current_qty, qty_to_deduct)
+                        
+                        qty_before = batch.current_qty
+                        batch.current_qty -= deduct
+                        qty_to_deduct -= deduct
+                        
+                        if batch.current_qty == 0:
+                            batch.status = BatchStatus.CONSUMED.value
+                        
+                        batches_deducted.append({
+                            "batch": batch.batch_number,
+                            "deducted": deduct,
+                            "type": "FIFO_FALLBACK"
+                        })
+                        
+                        log_movement(
+                            db=db,
+                            batch_id=batch.id,
+                            movement_type=MovementType.OUTBOUND,
+                            qty=deduct, 
+                            qty_before=qty_before,
+                            qty_after=batch.current_qty,
+                            from_location_id=batch.location_id,
+                            reference_type="DO",
+                            reference_id=do.id,
+                            reference_number=do.do_number,
+                            performed_by="system", # TODO: User ID
+                            reason="Order Fulfillment (FIFO)"
+                        )
         
         do.status = DOStatus.DELIVERED
         do.delivered_at = datetime.now()

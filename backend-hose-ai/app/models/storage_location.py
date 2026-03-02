@@ -2,7 +2,7 @@
 WMS Enterprise - Storage Location Model
 Hierarchical location tracking: Warehouse → Zone → Rack → Level → Bin
 """
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Enum
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Enum, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -55,6 +55,10 @@ class StorageLocation(Base):
     # Relationships
     batches = relationship("InventoryBatch", back_populates="location")
     
+    # NEW: Multi-Entity Support
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True) # Nullable for migration
+    company = relationship("Company", back_populates="locations")
+
     def __repr__(self):
         return f"<StorageLocation {self.code}>"
     

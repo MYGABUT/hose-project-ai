@@ -1,18 +1,7 @@
 import { useState } from 'react';
 import './GlobalSearch.css';
 
-// Mock search results
-const mockTimeline = {
-    hoseId: 'H-2024-889-01',
-    spec: 'EATON 2SN 3/4" x 2m',
-    status: 'Installed',
-    events: [
-        { date: '2024-01-14', action: 'Installed', detail: 'Unit: Dozer D85 - Boom Left', user: 'Teknisi Budi' },
-        { date: '2024-01-13', action: 'QC Passed', detail: 'Pressure Test: 5000 PSI - PASS', user: 'QC Inspector Andi' },
-        { date: '2024-01-12', action: 'Crimped', detail: 'Diameter: 28.4mm (Tol: OK)', user: 'Operator Ahmad' },
-        { date: '2024-01-12', action: 'Created', detail: 'From Roll: ROLL-001', user: 'Operator Ahmad' }
-    ]
-};
+import { api } from '../../../services/api';
 
 export default function GlobalSearch({ isOpen, onClose }) {
     const [searchQuery, setSearchQuery] = useState('');
@@ -24,12 +13,21 @@ export default function GlobalSearch({ isOpen, onClose }) {
         if (!searchQuery.trim()) return;
 
         setIsSearching(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Demo: any search returns mock result
-        setSearchResult(mockTimeline);
-        setIsSearching(false);
+        try {
+            const res = await api.get('/search/global', { params: { q: searchQuery } });
+            if (res.data.found) {
+                setSearchResult(res.data);
+            } else {
+                setSearchResult(null);
+                // Optional: Show toast or small error
+                alert(`Tidak ditemukan data untuk "${searchQuery}"`);
+            }
+        } catch (err) {
+            console.error("Search error:", err);
+            alert("Gagal melakukan pencarian via server.");
+        } finally {
+            setIsSearching(false);
+        }
     };
 
     const handleClose = () => {

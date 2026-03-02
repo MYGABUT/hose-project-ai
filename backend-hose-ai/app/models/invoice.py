@@ -8,6 +8,7 @@ from sqlalchemy.orm import relationship
 from decimal import Decimal
 
 from app.core.database import Base
+from app.models.enums import InvoiceStatus
 
 
 class Invoice(Base):

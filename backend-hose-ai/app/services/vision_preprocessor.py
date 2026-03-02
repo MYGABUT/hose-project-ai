@@ -4,7 +4,12 @@ Processes images with multiple variations to capture text in various conditions
 (dark, glare, faded, dirty surfaces on black hose rubber)
 """
 
-import cv2
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+    print("[WARNING] cv2 not available - vision preprocessing disabled")
 import numpy as np
 from typing import List, Tuple
 from io import BytesIO
@@ -45,6 +50,9 @@ class VisionPreprocessor:
         Tanpa CLAHE: AI cuma lihat silau putih dan gelap hitam. Teks hilang.
         Pakai CLAHE: AI bisa melihat teks di area gelap DAN area terang sekaligus.
         """
+        if not CV2_AVAILABLE:
+            return None
+
         # 1. Convert bytes ke Format Gambar OpenCV
         nparr = np.frombuffer(image_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -81,6 +89,9 @@ class VisionPreprocessor:
         Returns:
             List of (variation_name, processed_image) tuples
         """
+        if not CV2_AVAILABLE:
+            return []
+
         # Convert bytes to numpy array
         img = self._bytes_to_cv2(image_bytes)
         

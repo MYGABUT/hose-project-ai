@@ -1,0 +1,9 @@
+Policy Debugger...
+
+Active Policies on inventory_batches:
+
+Testing Session Variable:
+   Initial Value: 'None' (Type: <class 'NoneType'>)
+   After SET '999999': '999999'
+   Visible Rows: 2
+   Logic Check (1 == 999999?): False

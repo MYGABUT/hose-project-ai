@@ -11,6 +11,7 @@ from datetime import datetime
 import uuid
 
 from app.core.database import get_db
+from app.core.helpers import get_enum_value
 from app.core.config import settings
 from app.models import (
     JobOrder, JOLine, JOMaterial,
@@ -39,6 +40,7 @@ class JOCreateFromSO(BaseModel):
     due_date: Optional[datetime] = None
     assigned_to: Optional[str] = None
     notes: Optional[str] = None
+    requires_assembly: bool = True  # False = skip cutting wizard, ready for delivery
 
 
 class MaterialScanConfirm(BaseModel):
@@ -159,6 +161,82 @@ def list_job_orders(
     }
 
 
+# ============ Outstanding JO Tracker (MUST be before /{jo_id}) ============
+
+@router.get("/tracking/outstanding")
+def get_outstanding_jos(
+    db: Session = Depends(get_db)
+):
+    """
+    📦 Outstanding JO Tracker — Partial Shipment Monitor
+    
+    Returns all JOs that are not fully completed/delivered,
+    with line-level breakdown of ordered vs completed.
+    """
+    from app.models.enums import JOStatus
+    
+    # Get all JOs that are not COMPLETED or CANCELLED
+    active_statuses = ['DRAFT', 'MATERIALS_RESERVED', 'IN_PROGRESS', 'PARTIAL']
+    
+    jos = db.query(JobOrder).filter(
+        JobOrder.status.in_(active_statuses)
+    ).order_by(JobOrder.due_date.asc()).all()
+    
+    outstanding = []
+    total_pending = 0
+    
+    for jo in jos:
+        lines_summary = []
+        jo_total_ordered = 0
+        jo_total_completed = 0
+        
+        for line in jo.lines:
+            ordered = line.qty_ordered or 0
+            completed = line.qty_completed or 0
+            pending = ordered - completed
+            jo_total_ordered += ordered
+            jo_total_completed += completed
+            total_pending += pending
+            
+            lines_summary.append({
+                "line_number": line.line_number,
+                "description": line.description,
+                "qty_ordered": ordered,
+                "qty_completed": completed,
+                "qty_pending": pending,
+                "progress_pct": round((completed / ordered * 100) if ordered > 0 else 0, 1)
+            })
+        
+        outstanding.append({
+            "jo_id": jo.id,
+            "jo_number": jo.jo_number,
+            "so_number": jo.sales_order.so_number if jo.sales_order else None,
+            "customer_name": jo.sales_order.customer_name if jo.sales_order else None,
+            "status": jo.status,
+            "priority": jo.priority,
+            "assigned_to": jo.assigned_to,
+            "requires_assembly": jo.requires_assembly,
+            "due_date": jo.due_date.isoformat() if jo.due_date else None,
+            "total_ordered": jo_total_ordered,
+            "total_completed": jo_total_completed,
+            "total_pending": jo_total_ordered - jo_total_completed,
+            "progress_pct": round((jo_total_completed / jo_total_ordered * 100) if jo_total_ordered > 0 else 0, 1),
+            "lines": lines_summary
+        })
+    
+    return {
+        "status": "success",
+        "summary": {
+            "total_active_jos": len(outstanding),
+            "total_pending_qty": total_pending,
+            "urgent_count": sum(1 for j in outstanding if j["priority"] <= 2)
+        },
+        "data": outstanding
+    }
+
+
+# ============ JO Detail (path-param routes below) ============
+
 @router.get("/{jo_id}")
 def get_job_order(
     jo_id: int,
@@ -215,6 +293,7 @@ def create_jo_from_so(
         priority=data.priority,
         due_date=data.due_date or so.required_date,
         assigned_to=data.assigned_to,
+        requires_assembly=data.requires_assembly,
         notes=data.notes,
         created_by="system"
     )
@@ -262,12 +341,17 @@ def create_jo_from_so(
     
     jo.total_steps = total_steps
     
-    # Update JO status based on allocation
-    all_success = all(r["result"].get("success", False) for r in allocation_results if r["result"])
-    if total_steps > 0 and all_success:
-        jo.status = JOStatus.MATERIALS_RESERVED
-    elif total_steps > 0:
-        jo.status = JOStatus.DRAFT  # Partial allocation
+    # Update JO status based on allocation or skip-assembly flag
+    if not data.requires_assembly:
+        # Non-assembly JO — skip cutting wizard, mark as ready
+        jo.status = JOStatus.COMPLETED if hasattr(JOStatus, 'COMPLETED') else 'COMPLETED'
+        jo.notes = (jo.notes or '') + "\n🚀 Skip Assembly — langsung siap kirim"
+    else:
+        all_success = all(r["result"].get("success", False) for r in allocation_results if r["result"])
+        if total_steps > 0 and all_success:
+            jo.status = JOStatus.MATERIALS_RESERVED
+        elif total_steps > 0:
+            jo.status = JOStatus.DRAFT  # Partial allocation
     
     # Update SO status
     remaining_lines = [l for l in so.lines if l.qty_pending > 0 and l.id not in [sol.id for sol in so_lines]]
@@ -548,10 +632,20 @@ def start_job_order(
     
     db.commit()
     
+    # 🔗 INTEGRATION: Check materials + reorder alerts
+    integration_result = None
+    try:
+        from app.services.integration import on_jo_started
+        integration_result = on_jo_started(db, jo_id)
+    except Exception as e:
+        import logging
+        logging.getLogger("integration").warning(f"Integration hook failed: {e}")
+    
     return {
         "status": "success",
         "message": f"JO {jo.jo_number} dimulai",
-        "data": jo.to_dict_simple()
+        "data": jo.to_dict_simple(),
+        "integration": integration_result
     }
 
 
@@ -658,6 +752,16 @@ def complete_job_order(
     
     db.commit()
     
+    # 🔗 INTEGRATION: Auto-create Draft DO from completed JO
+    integration_result = None
+    try:
+        from app.services.integration import on_jo_completed
+        integration_result = on_jo_completed(db, jo_id)
+        db.commit()
+    except Exception as e:
+        import logging
+        logging.getLogger("integration").warning(f"Integration hook failed: {e}")
+    
     return {
         "status": "success",
         "message": f"JO {jo.jo_number} selesai. HPP: Rp {total_hpp:,}",
@@ -677,296 +781,7 @@ def complete_job_order(
                 for line in jo.lines
             ]
         },
-        "finished_batches": finished_batches
+        "finished_batches": finished_batches,
+        "integration": integration_result
     }
 
-
-# ============ Profitability ============
-
-@router.get("/{jo_id}/profit")
-def get_jo_profit(jo_id: int, db: Session = Depends(get_db)):
-    """
-    📈 Get profitability for a Job Order
-    
-    Calculates:
-    - Revenue (from SO line price)
-    - HPP (from JO completion)
-    - Profit = Revenue - HPP
-    - Margin % = Profit / Revenue * 100
-    """
-    jo = db.query(JobOrder).filter(JobOrder.id == jo_id).first()
-    
-    if not jo:
-        raise HTTPException(status_code=404, detail="Job Order tidak ditemukan")
-    
-    # Get SO for revenue
-    so = db.query(SalesOrder).filter(SalesOrder.id == jo.so_id).first()
-    
-    # Calculate total revenue and HPP per line
-    lines_profit = []
-    total_revenue = 0
-    total_hpp = 0
-    
-    for line in jo.lines:
-        # Get revenue from SO line
-        revenue = 0
-        if line.so_line_id:
-            so_line = db.query(SOLine).filter(SOLine.id == line.so_line_id).first()
-            if so_line:
-                # Revenue = price per unit * qty
-                unit_price = float(so_line.unit_price or 0)
-                revenue = unit_price * float(line.qty_ordered or 0)
-        
-        # HPP from JO line
-        hpp = float(line.line_hpp or 0)
-        profit = revenue - hpp
-        margin = (profit / revenue * 100) if revenue > 0 else 0
-        
-        total_revenue += revenue
-        total_hpp += hpp
-        
-        lines_profit.append({
-            "line_number": line.line_number,
-            "description": line.description,
-            "qty": float(line.qty_ordered or 0),
-            "revenue": revenue,
-            "hpp": hpp,
-            "profit": profit,
-            "margin_percent": round(margin, 1)
-        })
-    
-    total_profit = total_revenue - total_hpp
-    total_margin = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
-    
-    return {
-        "status": "success",
-        "data": {
-            "jo_id": jo.id,
-            "jo_number": jo.jo_number,
-            "so_number": so.so_number if so else None,
-            "customer_name": so.customer_name if so else None,
-            "status": jo.status.value if jo.status else None,
-            "summary": {
-                "total_revenue": total_revenue,
-                "total_hpp": total_hpp,
-                "total_profit": total_profit,
-                "margin_percent": round(total_margin, 1),
-                "is_profitable": total_profit > 0
-            },
-            "lines": lines_profit
-        }
-    }
-
-
-@router.get("/reports/profitability")
-def get_profitability_report(
-    days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db)
-):
-    """
-    📊 Get profitability report for completed JOs
-    
-    Summary of all profitable/unprofitable jobs in date range.
-    """
-    from datetime import datetime, timedelta
-    
-    start_date = datetime.now() - timedelta(days=days)
-    
-    # Get completed JOs
-    jos = db.query(JobOrder).filter(
-        JobOrder.status == JOStatus.COMPLETED,
-        JobOrder.completed_at >= start_date
-    ).all()
-    
-    total_revenue = 0
-    total_hpp = 0
-    profitable_count = 0
-    unprofitable_count = 0
-    jo_profits = []
-    
-    for jo in jos:
-        # Calculate profit for each JO
-        so = db.query(SalesOrder).filter(SalesOrder.id == jo.so_id).first()
-        
-        jo_revenue = 0
-        for line in jo.lines:
-            if line.so_line_id:
-                so_line = db.query(SOLine).filter(SOLine.id == line.so_line_id).first()
-                if so_line:
-                    jo_revenue += float(so_line.unit_price or 0) * float(line.qty_ordered or 0)
-        
-        jo_hpp = float(jo.total_hpp or 0)
-        jo_profit = jo_revenue - jo_hpp
-        margin = (jo_profit / jo_revenue * 100) if jo_revenue > 0 else 0
-        
-        total_revenue += jo_revenue
-        total_hpp += jo_hpp
-        
-        if jo_profit > 0:
-            profitable_count += 1
-        else:
-            unprofitable_count += 1
-        
-        jo_profits.append({
-            "jo_number": jo.jo_number,
-            "customer": so.customer_name if so else "Unknown",
-            "completed_at": jo.completed_at.isoformat() if jo.completed_at else None,
-            "revenue": jo_revenue,
-            "hpp": jo_hpp,
-            "profit": jo_profit,
-            "margin_percent": round(margin, 1)
-        })
-    
-    total_profit = total_revenue - total_hpp
-    overall_margin = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
-    
-    # Sort by profit (lowest first to show problem jobs)
-    jo_profits_sorted = sorted(jo_profits, key=lambda x: x["profit"])
-    
-    return {
-        "status": "success",
-        "period_days": days,
-        "summary": {
-            "total_jobs": len(jos),
-            "profitable_jobs": profitable_count,
-            "unprofitable_jobs": unprofitable_count,
-            "total_revenue": total_revenue,
-            "total_hpp": total_hpp,
-            "total_profit": total_profit,
-            "overall_margin_percent": round(overall_margin, 1)
-        },
-        "top_unprofitable": jo_profits_sorted[:5] if unprofitable_count > 0 else [],
-        "top_profitable": list(reversed(jo_profits_sorted[-5:])) if len(jo_profits) > 0 else []
-    }
-
-
-# ============ Disassembly ============
-
-class DisassemblyRequest(BaseModel):
-    """Disassemble a failed JO line"""
-    jo_line_id: int
-    reason: str  # Alasan bongkar (salah press, rusak, dll)
-    hose_remaining_length: float = 0  # Sisa panjang selang yang bisa dipakai
-    fitting_a_salvageable: bool = False  # Apakah fitting A bisa dipakai lagi
-    fitting_b_salvageable: bool = False
-
-
-@router.post("/{jo_id}/disassemble")
-def disassemble_jo_line(
-    jo_id: int,
-    data: DisassemblyRequest,
-    db: Session = Depends(get_db)
-):
-    """
-    🔧 Disassemble a failed Job Order line
-    
-    When assembly fails (wrong press, damaged fitting), this endpoint:
-    1. Returns fitting as REJECT or SALVAGE
-    2. Updates hose batch with remaining length (or marks as scrap)
-    3. Logs the disassembly for tracking
-    
-    NOTE: This is for COMPLETED JO lines that need to be undone
-    """
-    from app.models import InventoryBatch, Product
-    from decimal import Decimal
-    
-    jo = db.query(JobOrder).filter(JobOrder.id == jo_id).first()
-    if not jo:
-        raise HTTPException(status_code=404, detail="Job Order tidak ditemukan")
-    
-    jo_line = db.query(JOLine).filter(
-        JOLine.id == data.jo_line_id,
-        JOLine.jo_id == jo_id
-    ).first()
-    
-    if not jo_line:
-        raise HTTPException(status_code=404, detail="JO Line tidak ditemukan")
-    
-    # Track what was disassembled
-    disassembly_log = {
-        "jo_number": jo.jo_number,
-        "line_number": jo_line.line_number,
-        "reason": data.reason,
-        "returned_materials": []
-    }
-    
-    # Process hose return
-    if data.hose_remaining_length > 0:
-        # Create a new remnant batch for the remaining hose
-        batch_number = f"REM-{jo.jo_number}-{jo_line.line_number}"
-        
-        hose_batch = InventoryBatch(
-            batch_number=batch_number,
-            product_id=jo_line.product_id,
-            product_sku=jo_line.hose_spec,
-            product_name=f"Remnant dari {jo.jo_number}",
-            initial_qty=Decimal(str(data.hose_remaining_length)),
-            current_qty=Decimal(str(data.hose_remaining_length)),
-            unit="meter",
-            source="DISASSEMBLY",
-            source_reference=jo.jo_number,
-            status="AVAILABLE",
-            is_remnant=True
-        )
-        db.add(hose_batch)
-        
-        disassembly_log["returned_materials"].append({
-            "type": "HOSE_REMNANT",
-            "batch_number": batch_number,
-            "qty": data.hose_remaining_length,
-            "unit": "meter"
-        })
-    
-    # Process fitting returns
-    if jo_line.fitting_a_sku:
-        status = "SALVAGE" if data.fitting_a_salvageable else "REJECT"
-        fitting_a_batch = InventoryBatch(
-            batch_number=f"DIS-A-{jo.jo_number}-{jo_line.line_number}",
-            product_sku=jo_line.fitting_a_sku,
-            product_name=f"Fitting A dari {jo.jo_number}",
-            initial_qty=Decimal(1),
-            current_qty=Decimal(1),
-            unit="PCS",
-            source="DISASSEMBLY",
-            source_reference=jo.jo_number,
-            status=status
-        )
-        db.add(fitting_a_batch)
-        
-        disassembly_log["returned_materials"].append({
-            "type": f"FITTING_A_{status}",
-            "sku": jo_line.fitting_a_sku,
-            "qty": 1
-        })
-    
-    if jo_line.fitting_b_sku:
-        status = "SALVAGE" if data.fitting_b_salvageable else "REJECT"
-        fitting_b_batch = InventoryBatch(
-            batch_number=f"DIS-B-{jo.jo_number}-{jo_line.line_number}",
-            product_sku=jo_line.fitting_b_sku,
-            product_name=f"Fitting B dari {jo.jo_number}",
-            initial_qty=Decimal(1),
-            current_qty=Decimal(1),
-            unit="PCS",
-            source="DISASSEMBLY",
-            source_reference=jo.jo_number,
-            status=status
-        )
-        db.add(fitting_b_batch)
-        
-        disassembly_log["returned_materials"].append({
-            "type": f"FITTING_B_{status}",
-            "sku": jo_line.fitting_b_sku,
-            "qty": 1
-        })
-    
-    # Mark line as disassembled
-    jo_line.notes = (jo_line.notes or "") + f"\n[DISASSEMBLED] {data.reason}"
-    
-    db.commit()
-    
-    return {
-        "status": "success",
-        "message": f"JO Line {jo_line.line_number} berhasil dibongkar",
-        "data": disassembly_log
-    }

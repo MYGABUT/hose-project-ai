@@ -230,6 +230,13 @@ def clear_giro(giro_id: int, db: Session = Depends(get_db)):
     
     db.commit()
     
+    # 🔗 INTEGRATION: Update customer payment reliability
+    try:
+        from app.services.integration import on_giro_cleared
+        on_giro_cleared(db, giro_id)
+    except Exception:
+        pass
+    
     return {
         "status": "success",
         "message": f"Giro {giro.giro_number} sudah cair"
@@ -279,6 +286,13 @@ def bounce_giro(
     )
     
     db.commit()
+    
+    # 🔗 INTEGRATION: Flag customer as HIGH RISK
+    try:
+        from app.services.integration import on_giro_bounced
+        on_giro_bounced(db, giro_id, data.reason)
+    except Exception:
+        pass
     
     return {
         "status": "success",

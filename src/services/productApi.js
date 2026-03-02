@@ -3,7 +3,9 @@
  * Connects frontend to Python FastAPI backend for product management
  */
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
+import { getAuthHeader } from './api';
+
+const API_BASE_URL = import.meta.env.VITE_AI_API_URL || "";
 
 /**
  * Get all products
@@ -21,7 +23,9 @@ export async function getProducts(params = {}) {
         if (params.active_only !== undefined) queryParams.append('active_only', params.active_only);
 
         const response = await fetch(
-            `${API_BASE_URL}/api/v1/products?${queryParams.toString()}`
+            `${API_BASE_URL}/api/v1/products?${queryParams.toString()}`, {
+            headers: { ...getAuthHeader() }
+        }
         );
 
         if (!response.ok) {
@@ -46,7 +50,9 @@ export async function getProducts(params = {}) {
  */
 export async function getProduct(productId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/products/${productId}`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/products/${productId}`, {
+            headers: { ...getAuthHeader() }
+        });
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);

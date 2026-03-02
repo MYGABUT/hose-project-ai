@@ -13,7 +13,13 @@ from app.core.database import get_db
 from app.models.user import User
 
 
-router = APIRouter(prefix="/users", tags=["Users & Auth"])
+from app.core.security import get_current_user
+
+router = APIRouter(
+    prefix="/users", 
+    tags=["Users & Auth"]
+    # We don't add dependencies here because /login must be public
+)
 
 
 # ============ Schemas ============
@@ -56,10 +62,12 @@ class UserResponse(BaseModel):
 
 # ============ Endpoints ============
 
+from app.core.security import verify_password
+
 @router.post("/login")
 def login(data: UserLogin, db: Session = Depends(get_db)):
     """
-    🔑 Simple Login (Plain Text Password for demo compatibility)
+    🔑 Secured Login (Hash Verification)
     """
     user = db.query(User).filter(
         User.email == data.email, 
@@ -67,7 +75,7 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
         User.is_deleted == False
     ).first()
     
-    if not user or user.password != data.password:
+    if not user or not verify_password(data.password, user.password):
         raise HTTPException(status_code=401, detail="Email atau password salah")
     
     # Update login time (simulated)
@@ -89,9 +97,28 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"Log Error: {e}")
 
+    # Generate Token
+    from app.core.security import create_access_token
+    from datetime import timedelta
+    from app.core.config import settings
+    
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    additional_claims = {
+        "cid": user.company_id,
+        "role": user.role,
+        "uid": user.id
+    }
+    
+    access_token = create_access_token(
+        subject=user.email,
+        expires_delta=access_token_expires,
+        additional_claims=additional_claims
+    )
+
     return {
         "status": "success",
         "message": "Login berhasil",
+        "access_token": access_token,
         "data": user.to_dict()
     }
 
@@ -102,12 +129,16 @@ def list_users(
     search: Optional[str] = None,
     role: Optional[str] = None,
     active_only: bool = True,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     📋 List users
     """
-    query = db.query(User).filter(User.is_deleted == False)
+    query = db.query(User).filter(
+        User.is_deleted == False,
+        User.role != "developer" # Hide developer accounts from Management
+    )
     
     if active_only:
         query = query.filter(User.is_active == True)
@@ -134,7 +165,7 @@ def list_users(
     }
 
 @router.post("")
-def create_user(data: UserCreate, db: Session = Depends(get_db)):
+def create_user(data: UserCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     ➕ Create new user
     """
@@ -180,7 +211,7 @@ def create_user(data: UserCreate, db: Session = Depends(get_db)):
     }
 
 @router.get("/{user_id}")
-def get_user(user_id: int, db: Session = Depends(get_db)):
+def get_user(user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     🔍 Get user details
     """
@@ -194,7 +225,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     }
 
 @router.put("/{user_id}")
-def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db)):
+def update_user(user_id: int, data: UserUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     ✏️ Update user
     """
@@ -231,7 +262,7 @@ def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db)):
     }
 
 @router.delete("/{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db)):
+def delete_user(user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     🗑️ Soft delete user
     """

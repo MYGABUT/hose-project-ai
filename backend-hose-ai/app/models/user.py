@@ -2,7 +2,7 @@
 HoseMaster WMS - User Model
 System users and authentication
 """
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
 from sqlalchemy.sql import func
 
 from app.core.database import Base
@@ -29,10 +29,23 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     is_deleted = Column(Boolean, default=False)
     
+    # Security: Brute Force Protection
+    failed_login_count = Column(Integer, default=0)
+    locked_until = Column(DateTime(timezone=True), nullable=True)
+    last_login_at = Column(DateTime(timezone=True), nullable=True)
+    last_login_ip = Column(String(45), nullable=True)  # IPv6 max length
+    
     # Metadata
     transaction_count = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Multi-Entity Link
+    from sqlalchemy import ForeignKey
+    from sqlalchemy.orm import relationship
+    
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True) # Nullable for SuperAdmin / Induk default
+    company = relationship("Company", back_populates="users")
 
     def to_dict(self):
         return {
@@ -41,6 +54,8 @@ class User(Base):
             "name": self.name,
             "email": self.email,
             "role": self.role,
+            "company_id": self.company_id,
+            "company_name": self.company.name if self.company else None,
             "phone": self.phone,
             "address": self.address,
             "bio": self.bio,

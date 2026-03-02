@@ -9,6 +9,7 @@ import {
     getProductionStats,
     getRestockPrediction
 } from '../services/analyticsApi';
+import { useAuth } from './AuthContext';
 
 const AnalyticsContext = createContext(null);
 
@@ -75,9 +76,13 @@ export function AnalyticsProvider({ children }) {
         setLoading(false);
     }, [dateRange]);
 
+    const { isAuthenticated } = useAuth();
+
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        if (isAuthenticated) {
+            fetchData();
+        }
+    }, [fetchData, isAuthenticated]);
 
     // Get chart data for line chart
     const getSalesChartData = () => ({
