@@ -11,7 +11,8 @@ from app.models.enums import (
     JOMaterialStatus,
     DOStatus,
     ReturnStatus,
-    QCResult
+    QCResult,
+    BlanketReleaseStatus
 )
 from app.models.storage_location import StorageLocation
 from app.models.user import User
@@ -49,6 +50,7 @@ from app.models.customer_asset import CustomerAsset, AssetComponent, AssetHMLog
 from app.models.invoice_inbox import InvoiceInbox
 from app.models.crm import CRMLead, LeadStatus
 from app.models.intercompany_loan import InterCompanyLoan, InterCompanyLoanItem
+from app.models.blanket_release import BlanketRelease, BlanketReleaseLine
 
 __all__ = [
     # Enums
@@ -130,4 +132,7 @@ __all__ = [
     "LeadStatus",
     "InterCompanyLoan",
     "InterCompanyLoanItem",
+    "BlanketReleaseStatus",
+    "BlanketRelease",
+    "BlanketReleaseLine",
 ]

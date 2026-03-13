@@ -122,11 +122,21 @@ class SOStatus(str, enum.Enum):
     DRAFT = "DRAFT"
     PENDING_APPROVAL = "PENDING_APPROVAL"
     CONFIRMED = "CONFIRMED"
+    BLANKET = "BLANKET"                     # Blanket Order — scheduled delivery
     PARTIAL_JO = "PARTIAL_JO"
     FULL_JO = "FULL_JO"
     PARTIAL_DELIVERED = "PARTIAL_DELIVERED"
     COMPLETED = "COMPLETED"
     INVOICED = "INVOICED"
+    CANCELLED = "CANCELLED"
+
+
+class BlanketReleaseStatus(str, enum.Enum):
+    """Blanket Order release/call-off status"""
+    PLANNED = "PLANNED"         # Dijadwalkan
+    READY = "READY"             # Siap kirim
+    RELEASED = "RELEASED"       # DO sudah dibuat
+    DELIVERED = "DELIVERED"     # Sudah terkirim
     CANCELLED = "CANCELLED"
 
 

@@ -2,7 +2,7 @@
 HoseMaster WMS - Sales Order Model
 Customer orders with line items
 """
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Enum, Float, ForeignKey, Numeric
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Enum, Float, ForeignKey, Numeric, Date
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -29,6 +29,12 @@ class SalesOrder(Base):
     salesman_id = Column(Integer, index=True)  # Link to Salesman
     customer_phone = Column(String(50))
     customer_address = Column(Text)
+    
+    # Order Type: REGULAR (normal) or BLANKET (scheduled delivery)
+    order_type = Column(String(20), default='REGULAR')  # 'REGULAR' or 'BLANKET'
+    blanket_valid_from = Column(Date)   # Blanket period start
+    blanket_valid_until = Column(Date)  # Blanket period end
+    qty_reserved = Column(Integer, default=0)  # Soft-reserved total qty
     
     # Dates
     order_date = Column(DateTime(timezone=True), server_default=func.now())
@@ -75,6 +81,7 @@ class SalesOrder(Base):
     lines = relationship("SOLine", back_populates="sales_order", cascade="all, delete-orphan")
     job_orders = relationship("JobOrder", back_populates="sales_order")
     delivery_orders = relationship("DeliveryOrder", back_populates="sales_order")
+    releases = relationship("BlanketRelease", back_populates="sales_order", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<SalesOrder {self.so_number}: {self.customer_name}>"
@@ -160,6 +167,7 @@ class SOLine(Base):
     qty = Column(Integer, nullable=False, default=1)
     qty_produced = Column(Integer, default=0)  # Sudah selesai produksi
     qty_shipped = Column(Integer, default=0)  # Sudah dikirim
+    qty_released = Column(Integer, default=0)  # Total qty called-off (blanket)
     
     # Pricing
     unit_price = Column(Numeric(15, 2), default=0)

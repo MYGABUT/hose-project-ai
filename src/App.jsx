@@ -36,6 +36,7 @@ const CuttingWizard = lazy(() => import('./pages/Production/CuttingWizard'));
 const JOProfitability = lazy(() => import('./pages/Production/JOProfitability'));
 const KioskMode = lazy(() => import('./pages/Production/KioskMode'));
 const InstantAssembly = lazy(() => import('./pages/Production/InstantAssembly'));
+const BlanketOrderPage = lazy(() => import('./pages/Production/BlanketOrderPage'));
 
 // ============ Lazy-loaded pages — Inventory ============
 const Inventory = lazy(() => import('./pages/Inventory/Inventory'));
@@ -170,6 +171,7 @@ function App() {
                           <Route path="production/profitability" element={<JOProfitability />} />
                           <Route path="production/wizard/:joId" element={<CuttingWizard />} />
                           <Route path="production/instant-assembly" element={<InstantAssembly />} />
+                          <Route path="production/blanket-orders" element={<BlanketOrderPage />} />
 
                           {/* Sales & CRM */}
                           <Route path="sales" element={<QuotationList />} />

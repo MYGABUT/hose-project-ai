@@ -177,6 +177,12 @@ export default function SalesOrders() {
                         💳 Piutang
                     </Button>
                     <Button
+                        variant="secondary"
+                        onClick={() => navigate('/production/blanket-orders')}
+                    >
+                        📋 Blanket Order
+                    </Button>
+                    <Button
                         variant="primary"
                         onClick={() => navigate('/production/new-order')}
                         icon={<span>➕</span>}
