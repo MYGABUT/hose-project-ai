@@ -199,18 +199,24 @@ def get_document_flow(entity_type: str, entity_id: int, db: Session = Depends(ge
         db.rollback()  # Prevent transaction poisoning
 
     # 3. Downstream: Job Orders
-    jo_res = db.execute(text("SELECT id, jo_number, status, due_date FROM job_orders WHERE sales_order_id = :sid"), {"sid": so.id}).fetchall()
-    for j in jo_res:
-        jo_id = f"JO-{j.id}"
-        add_node(jo_id, "JobOrder", j.jo_number, j.status, None, j.due_date)
-        add_edge(so_node_id, jo_id)
+    try:
+        jo_res = db.execute(text("SELECT id, jo_number, status, due_date FROM job_orders WHERE so_id = :sid"), {"sid": so.id}).fetchall()
+        for j in jo_res:
+            jo_id = f"JO-{j.id}"
+            add_node(jo_id, "JobOrder", j.jo_number, j.status, None, j.due_date)
+            add_edge(so_node_id, jo_id)
+    except Exception as e:
+        db.rollback()
 
-    # 4. Downstream: Delivery Orders (often linked to SO or JO)
-    do_res = db.execute(text("SELECT id, do_number, status, delivery_date FROM delivery_orders WHERE sales_order_id = :sid"), {"sid": so.id}).fetchall()
-    for d in do_res:
-        do_id = f"DO-{d.id}"
-        add_node(do_id, "DeliveryOrder", d.do_number, d.status, None, d.delivery_date)
-        add_edge(so_node_id, do_id)
+    # 4. Downstream: Delivery Orders
+    try:
+        do_res = db.execute(text("SELECT id, do_number, status, delivery_date FROM delivery_orders WHERE so_id = :sid"), {"sid": so.id}).fetchall()
+        for d in do_res:
+            do_id = f"DO-{d.id}"
+            add_node(do_id, "DeliveryOrder", d.do_number, d.status, None, d.delivery_date)
+            add_edge(so_node_id, do_id)
+    except Exception as e:
+        db.rollback()
         
         # Delivery Order might spawn Invoices technically, or SO does. 
 
