@@ -196,7 +196,7 @@ def get_document_flow(entity_type: str, entity_id: int, db: Session = Depends(ge
             add_node(quo_node_id, "Quotation", quo_res.quotation_number, quo_res.status, float(quo_res.total_amount), quo_res.quotation_date)
             add_edge(quo_node_id, so_node_id)
     except Exception as e:
-        pass # Quotation table might not exist or link might be different
+        db.rollback()  # Prevent transaction poisoning
 
     # 3. Downstream: Job Orders
     jo_res = db.execute(text("SELECT id, jo_number, status, due_date FROM job_orders WHERE sales_order_id = :sid"), {"sid": so.id}).fetchall()
@@ -233,9 +233,9 @@ def get_document_flow(entity_type: str, entity_id: int, db: Session = Depends(ge
                     add_node(pay_id, "Payment", p.payment_number, p.status, float(p.amount), p.payment_date)
                     add_edge(inv_id, pay_id)
             except Exception as e:
-                pass # Payments table might be named differently
+                db.rollback()  # Prevent transaction poisoning
     except Exception as e:
-        pass # Handle invoice SQL error gracefully if schema differs
+        db.rollback()  # Prevent transaction poisoning
 
     return {
         "status": "success",
