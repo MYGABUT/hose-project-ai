@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Card from '../../components/common/Card/Card';
 import Button from '../../components/common/Button/Button';
 import blanketOrderApi from '../../services/blanketOrderApi';
-import { getProducts } from '../../services/productionApi';
+import api from '../../services/api';
 import './Production.css';
 
 const STATUS_COLORS = {
@@ -54,8 +54,11 @@ export default function BlanketOrderPage() {
     };
 
     const openCreate = async () => {
-        const prodRes = await getProducts();
-        if (prodRes.status === 'success') setProducts(prodRes.data);
+        try {
+            const res = await api.get('/products');
+            if (res.data?.status === 'success') setProducts(res.data.data);
+            else if (Array.isArray(res.data)) setProducts(res.data);
+        } catch (e) { console.error('Failed to load products', e); }
         setView('create');
     };
 
